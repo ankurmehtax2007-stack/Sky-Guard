@@ -1,4 +1,4 @@
-import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings } from "./reading.repository.js";
+import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading } from "./reading.repository.js";
 import { predictReading } from "../ml/ml.service.js";
 import { saveAnomaly } from "../anomalies/anomaly.service.js";
 

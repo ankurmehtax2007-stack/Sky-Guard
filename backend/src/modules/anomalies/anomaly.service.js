@@ -1,3 +1,4 @@
+import { broadcast } from "../../websocket/websocket.manager.js";
 import { countAnomalies, createAnomaly, findAnomalies, findAnomalyById, updateAnomalyStatusRepo } from "./anomaly.repository.js";
 
 export const saveAnomaly = async (reading, prediction) => {
@@ -15,7 +16,13 @@ export const saveAnomaly = async (reading, prediction) => {
         action: prediction.action
     };
 
-    return await createAnomaly(anomalyData);
+    const anomaly = await createAnomaly(anomalyData);
+    broadcast({
+        type: "ANOMALY_DETECTED",
+        stationId: reading.stationId,
+        anomaly
+    });
+    return anomaly;
 };
 
 export const fetchAnomalies = async (stationId, pageNumber, limitNumber, from, to) => {

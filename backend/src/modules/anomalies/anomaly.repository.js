@@ -81,9 +81,7 @@ export const updateAnomalyStatusRepo = async (anomalyId , status , update = {}) 
         const updatedAnomaly = await Anomaly.findByIdAndUpdate(
             anomalyId,
             updateData,
-            {
-                new: true
-            }
+            { returnDocument: "after" }
         );
         return updatedAnomaly;
     } catch (error) {

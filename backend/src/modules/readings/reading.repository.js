@@ -98,7 +98,7 @@ export const findPendingReadings = async () => {
 
 export const updateReading = async (id, updates) => {
     try {
-        const reading = await SensorReading.findByIdAndUpdate(id, updates, { new: true });
+        const reading = await SensorReading.findByIdAndUpdate(id, updates, { returnDocument: "after" });
         return reading;
     } catch (error) {
         console.error("Error updating reading: repository", error.message);
