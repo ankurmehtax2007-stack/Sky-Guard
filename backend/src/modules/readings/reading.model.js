@@ -20,6 +20,11 @@ const readingSchema = new mongoose.Schema({
     pressure: {
         type: Number,
         required: true
+    },
+    mlStatus: {
+        type: String,
+        enum: ["pending", "processed"],
+        default: "pending"
     }
 });
 

@@ -1,14 +1,58 @@
-import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation } from "./reading.repository.js";
+import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings } from "./reading.repository.js";
+import { predictReading } from "../ml/ml.service.js";
+import { saveAnomaly } from "../anomalies/anomaly.service.js";
 
-const processReading = async (reading) => {
+export const processReading = async (reading) => {
+
     try {
-        await saveReading(reading);
+        const savedReading = await saveReading(reading);
+        try {
+            const prediction = await predictReading(savedReading);
+            if (prediction.isAnomaly) {
+                await saveAnomaly(savedReading, prediction);
+            }
+        } catch (error) {
+            console.error(
+                "ML service failed:",
+                error.message
+            );
+            // Reading is already safely stored.
+            // ML processing can be retried later.
+        }
+
     } catch (error) {
-        console.error("Error processing reading:", error.message);
+        console.error(
+            "Error saving reading:",
+            error.message
+        );
+        throw error;
     }
 };
 
-export default processReading;
+export const retryPendingML = async () => {
+    const pendingReadings = await findPendingReadings();
+    if (pendingReadings.length === 0) {
+        return;
+    }
+    for (const reading of pendingReadings) {
+        try {
+            const prediction = await predictReading(reading);
+            if (prediction.isAnomaly) {
+                await saveAnomaly(reading, prediction);
+            }
+            await updateReading(
+                reading._id,
+                { mlStatus: "processed" }
+            );
+
+        } catch (error) {
+            console.error(
+                `ML retry failed for ${reading._id}:`,
+                error.message
+            );
+        }
+    }
+};
 
 export const fetchLatestReadings = async () => {
     try {

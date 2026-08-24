@@ -5,7 +5,6 @@ import { client, publishMessage } from "./services/mqttService.js";
 const publishReading = (station) => {
     const data = generateReading(station);
     const topic = `weather/readings/${station.stationId}`;
-    console.log("Sending reading to topic:", topic, "with data:", data);
 
     publishMessage(topic, data);
 };

@@ -41,7 +41,9 @@ export const findLatestReadings = async () => {
 };
 
 const buildReadingFilter = (stationId, options) => {
-    const filter = { stationId };
+    const filter = stationId
+        ? { stationId }
+        : {};
 
     if (options.from || options.to) {
         filter.timestamp = {};
@@ -80,6 +82,26 @@ export const countReadingsByStation = async (stationId , options) => {
         return count;
     } catch (error) {
         console.error("Error counting readings: repository", error.message);
+        throw error;
+    }
+}
+
+export const findPendingReadings = async () => {
+    try {
+        const readings = await SensorReading.find({ mlStatus: "pending" }).limit(100);
+        return readings;
+    } catch (error) {
+        console.error("Error finding pending readings: repository", error.message);
+        throw error;
+    }
+}
+
+export const updateReading = async (id, updates) => {
+    try {
+        const reading = await SensorReading.findByIdAndUpdate(id, updates, { new: true });
+        return reading;
+    } catch (error) {
+        console.error("Error updating reading: repository", error.message);
         throw error;
     }
 }

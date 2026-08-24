@@ -1,34 +1,23 @@
 const frozenStations = new Map();
 
 export const injectAnomaly = (reading) => {
-
-    // Check whether this station is already frozen
     const frozen = frozenStations.get(reading.stationId);
 
     if (frozen) {
-
-        // Keep the selected sensor at the frozen value
         reading[frozen.sensor] = frozen.value;
-
-        // One reading has been consumed
         frozen.remaining--;
 
-        // End the frozen anomaly
         if (frozen.remaining <= 0) {
             frozenStations.delete(reading.stationId);
         }
-
         return reading;
     }
-
-    // Only ~5% of readings become anomalous
-    const shouldInject = Math.random() < 0.1;
+    const shouldInject = Math.random() < 0.05;
 
     if (!shouldInject) {
         return reading;
     }
 
-    // Choose anomaly type
     const anomalyType = Math.floor(Math.random() * 4) + 1;
 
     const direction = Math.random() < 0.5 ? 1 : -1;
