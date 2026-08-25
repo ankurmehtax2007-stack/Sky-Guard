@@ -25,6 +25,14 @@ const readingSchema = new mongoose.Schema({
         type: String,
         enum: ["pending", "processed"],
         default: "pending"
+    },
+    anomalyStatus: {
+        type: String,
+        enum: ["none", "detected", "saved"],
+        default: "none"
+    },
+    anomalyPrediction: {
+        type: Object,
     }
 });
 

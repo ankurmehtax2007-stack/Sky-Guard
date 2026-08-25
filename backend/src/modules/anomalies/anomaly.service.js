@@ -1,5 +1,6 @@
 import { broadcast } from "../../websocket/websocket.manager.js";
 import { countAnomalies, createAnomaly, findAnomalies, findAnomalyById, updateAnomalyStatusRepo } from "./anomaly.repository.js";
+import { retryPendingAnomalies } from "../readings/reading.service.js";
 
 export const saveAnomaly = async (reading, prediction) => {
 
@@ -16,15 +17,56 @@ export const saveAnomaly = async (reading, prediction) => {
         action: prediction.action
     };
 
-    const anomaly = await createAnomaly(anomalyData);
-    broadcast({
-        type: "ANOMALY_DETECTED",
-        stationId: reading.stationId,
-        anomaly
-    });
-    return anomaly;
-};
+    try {
 
+        const anomaly = await createAnomaly(anomalyData);
+        
+        await updateReading(
+            reading._id,
+            { anomalyStatus: "saved" }
+        );
+
+        try {
+
+            broadcast({
+                type: "ANOMALY_DETECTED",
+                stationId: reading.stationId,
+                anomaly
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Error broadcasting anomaly: service",
+                error.message
+            );
+        }
+
+        return anomaly;
+
+    } catch (error) {
+
+        if (error.code === 11000) {
+
+            console.log(
+                `Anomaly already exists for reading ${reading._id}`
+            );
+
+            await updateReading(
+                reading._id,
+                { anomalyStatus: "saved" }
+            );
+
+            return null;
+        }
+        console.error(
+            "Error saving anomaly: service",
+            error.message
+        );
+
+        throw error;
+    }
+};
 export const fetchAnomalies = async (stationId, pageNumber, limitNumber, from, to) => {
     try {
         const skip = (pageNumber - 1) * limitNumber;

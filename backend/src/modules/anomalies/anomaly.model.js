@@ -11,7 +11,8 @@ const anomalySchema = new Schema({
     readingId: {
         type: Schema.Types.ObjectId,
         ref: "SensorReading",
-        required: true
+        required: true,
+        unique: true
     },
 
     timestamp: {

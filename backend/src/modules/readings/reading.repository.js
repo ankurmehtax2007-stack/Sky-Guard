@@ -96,6 +96,16 @@ export const findPendingReadings = async () => {
     }
 }
 
+export const findDetectedAnomalies = async () => {
+    try {
+        const readings = await SensorReading.find({ anomalyStatus: "detected" }).limit(100);
+        return readings;
+    } catch (error) {
+        console.error("Error finding detected anomalies: repository", error.message);
+        throw error;
+    }
+}
+
 export const updateReading = async (id, updates) => {
     try {
         const reading = await SensorReading.findByIdAndUpdate(id, updates, { returnDocument: "after" });

@@ -1,25 +1,43 @@
-import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading } from "./reading.repository.js";
+import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading, findDetectedAnomalies } from "./reading.repository.js";
 import { predictReading } from "../ml/ml.service.js";
 import { saveAnomaly } from "../anomalies/anomaly.service.js";
+import { broadcast } from "../../websocket/websocket.manager.js";
 
 export const processReading = async (reading) => {
 
     try {
         const savedReading = await saveReading(reading);
         try {
+            broadcast({
+                type: "READING_UPDATED",
+                data: savedReading
+            });
+        } catch (error) {
+            console.error("Error broadcasting reading: service", error.message);
+        }
+        try {
             const prediction = await predictReading(savedReading);
+            await updateReading(
+                savedReading._id,
+                { mlStatus: "processed", anomalyStatus: prediction.isAnomaly ? "detected" : "none", anomalyPrediction: prediction }
+            );
             if (prediction.isAnomaly) {
-                await saveAnomaly(savedReading, prediction);
+                try {
+                    await saveAnomaly(savedReading, prediction);
+                    await updateReading(
+                        savedReading._id,
+                        { anomalyStatus: "saved" }
+                    );
+                } catch (error) {
+                    console.error("Error saving anomaly: service", error.message);
+                }
             }
         } catch (error) {
             console.error(
                 "ML service failed:",
                 error.message
             );
-            // Reading is already safely stored.
-            // ML processing can be retried later.
         }
-
     } catch (error) {
         console.error(
             "Error saving reading:",
@@ -28,6 +46,28 @@ export const processReading = async (reading) => {
         throw error;
     }
 };
+
+export const retryPendingAnomalies = async () => {
+    const detectedAnomalies = await findDetectedAnomalies();
+    if (detectedAnomalies.length === 0) {
+        return;
+    }
+    for (const anomaly of detectedAnomalies) {
+        try {
+            const anomalyData = anomaly.anomalyPrediction;
+            await saveAnomaly(anomaly.readingId, anomalyData);
+            await updateReading(
+                anomaly.readingId,
+                { anomalyStatus: "saved" }
+            );
+        } catch (error) {
+            console.error(
+                `Anomaly retry failed for ${anomaly.readingId}:`,
+                error.message
+            );
+        }
+    }
+}
 
 export const retryPendingML = async () => {
     const pendingReadings = await findPendingReadings();
@@ -69,7 +109,7 @@ export const fetchStationReadings = async (stationId, pageNumber, limitNumber, f
         const skip = (pageNumber - 1) * limitNumber;
         const [readings, total] = await Promise.all([
             findReadingsByStation(stationId, { skip, limit: limitNumber, from, to }),
-            countReadingsByStation(stationId , { from , to})
+            countReadingsByStation(stationId, { from, to })
         ]);
         const totalPages = Math.ceil(total / limitNumber);
 

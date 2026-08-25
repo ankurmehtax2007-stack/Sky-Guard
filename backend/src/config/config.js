@@ -9,6 +9,11 @@ const config = {
     mqttPort: process.env.MQTT_PORT,
 
     mlServiceURL: process.env.ML_SERVICE_URL,
+
+    accessTokenSecret: process.env.JWT_ACCESS_SECRET,
+    refreshTokenSecret: process.env.JWT_REFRESH_SECRET,
+
+    nodeEnv: process.env.NODE_ENV || "development"
 }
 
 export default config;
