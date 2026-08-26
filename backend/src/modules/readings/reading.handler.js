@@ -1,20 +1,29 @@
-import{ sensorReadingSchema} from "./reading.validator.js";
-import {processReading} from "./reading.service.js";
+import { sensorReadingSchema } from "./reading.validator.js";
+import { processReading } from "./reading.service.js";
+import logger from "../../utils/logger.js";
+import { readingsReceived } from "../../utils/metrics.js";
 
-const handleReading = (data) => {
+const handleReading = async (data) => {
 
     const result = sensorReadingSchema.safeParse(data);
 
     if (!result.success) {
 
-        console.error("ZOD ERROR:", result.error.issues);
+        logger.error(
+            {
+                readingId: data.readingId,
+                stationId: data.stationId,
+                issues: result.error.issues
+            },
+            "Invalid sensor reading"
+        );
 
-        console.log("RECEIVED DATA:", data);
+        logger.debug({ data }, "Received invalid sensor data");
 
         return;
     }
-
-    processReading(result.data);
+    readingsReceived.inc();
+    await processReading(result.data);
 };
 
 export default handleReading;

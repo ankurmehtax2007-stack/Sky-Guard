@@ -1,4 +1,5 @@
 import { SensorReading } from "./reading.model.js";
+import logger from "../../utils/logger.js";
 
 export const saveReading = async (reading) => {
     try {
@@ -6,7 +7,7 @@ export const saveReading = async (reading) => {
         await sensorReading.save();
         return sensorReading;
     } catch (error) {
-        console.error("Error saving reading:", error.message);
+        logger.error({ error }, "Error saving reading");
         throw error;
     }
 };
@@ -35,7 +36,17 @@ export const findLatestReadings = async () => {
         ]);
         return readings;
     } catch (error) {
-        console.error("Error fetching latest readings:", error.message);
+        logger.error({ error }, "Error fetching latest readings");
+        throw error;
+    }
+};
+
+export const findReadingById = async (id) => {
+    try {
+        const reading = await SensorReading.findById(id);
+        return reading;
+    } catch (error) {
+        logger.error({ error }, "Error fetching reading by id: repository");
         throw error;
     }
 };
@@ -69,7 +80,7 @@ export const findReadingsByStation = async (stationId, options) => {
             }).skip(options.skip).limit(options.limit);
         return readings;
     } catch (error) {
-        console.error("Error fetching readings by station: repository", error.message);
+        logger.error({ error }, "Error fetching readings by station: repository");
         throw error;
     }
 };
@@ -81,7 +92,7 @@ export const countReadingsByStation = async (stationId , options) => {
         const count = await SensorReading.countDocuments(query);
         return count;
     } catch (error) {
-        console.error("Error counting readings: repository", error.message);
+        logger.error({ error }, "Error counting readings: repository");
         throw error;
     }
 }
@@ -91,7 +102,7 @@ export const findPendingReadings = async () => {
         const readings = await SensorReading.find({ mlStatus: "pending" }).limit(100);
         return readings;
     } catch (error) {
-        console.error("Error finding pending readings: repository", error.message);
+        logger.error({ error }, "Error finding pending readings: repository");
         throw error;
     }
 }
@@ -101,7 +112,7 @@ export const findDetectedAnomalies = async () => {
         const readings = await SensorReading.find({ anomalyStatus: "detected" }).limit(100);
         return readings;
     } catch (error) {
-        console.error("Error finding detected anomalies: repository", error.message);
+        logger.error({ error }, "Error finding detected anomalies: repository");
         throw error;
     }
 }
@@ -111,7 +122,7 @@ export const updateReading = async (id, updates) => {
         const reading = await SensorReading.findByIdAndUpdate(id, updates, { returnDocument: "after" });
         return reading;
     } catch (error) {
-        console.error("Error updating reading: repository", error.message);
+        logger.error({ error }, "Error updating reading: repository");
         throw error;
     }
 }

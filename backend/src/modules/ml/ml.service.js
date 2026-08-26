@@ -1,4 +1,5 @@
 import config from "../../config/config.js";
+import logger from "../../utils/logger.js";
 
 
 export const predictReading = async (reading) => {
@@ -25,7 +26,7 @@ export const predictReading = async (reading) => {
 
     } catch (error) {
 
-        console.error("Error communicating with ML service:", error.message);
+        logger.error({ error }, "Error communicating with ML service");
 
         throw error;
     }

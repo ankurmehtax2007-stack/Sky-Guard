@@ -1,0 +1,43 @@
+services:
+
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+    networks:
+      - sih-network
+
+  ml-service:
+    build:
+      context: ./ml-service
+    container_name: sih-ml-service-container
+    ports:
+      - "8000:8000"
+    networks:
+      - sih-network
+
+  backend:
+    build: ./backend
+    container_name: sih-backend-container
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mqtt-broker
+      - ml-service
+    networks:
+      - sih-network
+
+  simulator:
+    build: ./simulator
+    container_name: sih-simulator-container
+    env_file:
+      - ./simulator/.env
+    depends_on:
+      - mqtt-broker
+    networks:
+      - sih-network
+
+networks:
+  sih-network:
+    driver: bridge

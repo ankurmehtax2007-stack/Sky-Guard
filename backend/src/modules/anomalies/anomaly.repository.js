@@ -1,4 +1,5 @@
 import Anomaly from "./anomaly.model.js";
+import logger from "../../utils/logger.js";
 
 export const createAnomaly = async (anomalyData) => {
 
@@ -7,7 +8,9 @@ export const createAnomaly = async (anomalyData) => {
         await anomaly.save();
         return anomaly;
     } catch (error) {
-        console.error("Error creating anomaly:", error.message);
+        if (error.code !== 11000) {
+            logger.error({ err: error }, "Error creating anomaly");
+        }
         throw error;
     }
 };
@@ -41,7 +44,7 @@ export const findAnomalies = async (stationId, options) => {
             .limit(options.limit);
         return anomalies;
     } catch (error) {
-        console.error("Error fetching anomalies: repository", error.message);
+        logger.error({ error }, "Error fetching anomalies: repository");
         throw error;
     }
 }
@@ -52,10 +55,7 @@ export const countAnomalies = async (stationId , options) => {
         const count = await Anomaly.countDocuments(filter);
         return count;
     } catch (error) {
-        console.error(
-            "Error counting anomalies: repository",
-            error.message
-        );
+        logger.error({ error }, "Error counting anomalies: repository");
 
         throw error;
     }
@@ -66,7 +66,7 @@ export const findAnomalyById = async (anomalyId) => {
         const anomaly = await Anomaly.findById(anomalyId).lean();
         return anomaly;
     } catch (error) {
-        console.error("Error fetching anomaly by id: repository", error.message);
+        logger.error({ error }, "Error fetching anomaly by id: repository");
         throw error;
     }
 };
@@ -85,7 +85,7 @@ export const updateAnomalyStatusRepo = async (anomalyId , status , update = {}) 
         );
         return updatedAnomaly;
     } catch (error) {
-        console.error("Error updating anomaly status: repository", error.message);
+        logger.error({ error }, "Error updating anomaly status: repository");
         throw error;
     }
 };

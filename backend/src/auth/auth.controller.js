@@ -6,6 +6,7 @@ import {
     updateUserById,
     deleteUserById,
 } from "./user.repository.js";
+import logger from "../utils/logger.js";
 
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
@@ -31,7 +32,7 @@ export const loginUser = async (req, res) => {
             accessToken,
         });
     } catch (error) {
-        console.error("Error in login:", error);
+        logger.error({ error }, "Error in login");
         res.status(error.status || 500).json({ message: error.message || "Internal server error1" });
     }
 };
@@ -61,7 +62,7 @@ export const registerUser = async (req, res) => {
             accessToken,
         });
     } catch (error) {
-        console.error("Error in registration:", error);
+        logger.error({ error }, "Error in registration");
         res.status(error.status || 500).json({ message: error.message || "Internal server error2" });
     }
 };
@@ -73,7 +74,7 @@ export const logoutUser = async (req , res) => {
         res.clearCookie("refreshToken");
         return res.status(200).json({ message: "User logged out successfully" });
     }catch(error){
-        console.error("Error in logout:", error);
+        logger.error({ error }, "Error in logout");
         res.status(error.status || 500).json({ message: error.message || "Internal server error3" });
     }
 };
@@ -83,7 +84,7 @@ export const getAllUsers = async (req, res) => {
         const users = await findAllUsers();
         res.status(200).json(users);
     } catch (error) {
-        console.error("Error in fetching users:", error);
+        logger.error({ error }, "Error in fetching users");
         res.status(500).json({ message: "Internal server error4" });
     }
 };
@@ -96,7 +97,7 @@ export const getUserById = async (req, res) => {
         }
         res.status(200).json(user);
     } catch (error) {
-        console.error("Error in fetching user:", error);
+        logger.error({ error }, "Error in fetching user");
         res.status(500).json({ message: "Internal server error5" });
     }
 };
@@ -109,7 +110,7 @@ export const updateUser = async (req, res) => {
         }
         res.status(200).json(updatedUser);
     } catch (error) {
-        console.error("Error in updating user:", error);
+        logger.error({ error }, "Error in updating user");
         res.status(500).json({ message: "Internal server error6" });
     }
 };
@@ -119,7 +120,7 @@ export const deleteUser = async (req, res) => {
         await deleteUserById(req.params.id);
         res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
-        console.error("Error in deleting user:", error);
+        logger.error({ error }, "Error in deleting user");
         res.status(500).json({ message: "Internal server error7" });
     }
 };

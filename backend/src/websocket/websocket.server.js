@@ -1,13 +1,16 @@
 import { WebSocketServer } from "ws";
 import { addClient, broadcast, removeClient } from "./websocket.manager.js";
+import logger from "../utils/logger.js";
 
 export const initializeWebSocket = (server) => {
     const wss = new WebSocketServer({ server });
     wss.on("connection", (ws) => {
-        console.log("WebSocket client connected");
+        logger.info("WebSocket client connected");
+        activeWebSocketConnections.inc();
         addClient(ws);
         ws.on("close", () => {
-            console.log("WebSocket client disconnected");
+            logger.info("WebSocket client disconnected");
+            activeWebSocketConnections.dec();
             removeClient(ws);
         });
         broadcast({

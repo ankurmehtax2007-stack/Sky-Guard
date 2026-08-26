@@ -1,16 +1,22 @@
 import { retryPendingAnomalies } from "../readings/reading.service.js";
+import logger from "../../utils/logger.js";
 
-const startAnomalyRetryWorker = () => {
-    setInterval(async () => {
+let retryInterval = null;
+
+export const startAnomalyRetryWorker = () => {
+    retryInterval = setInterval(async () => {
         try {
             await retryPendingAnomalies();
         } catch (error) {
-            console.error(
-                "Anomaly retry worker error:",
-                error.message
-            );
+            logger.error({ error }, "Anomaly retry worker error");
         }
     }, 30 * 1000);
 };
 
-export default startAnomalyRetryWorker;
+export const stopAnomalyRetryWorker = () => {
+    if (retryInterval) {
+        clearInterval(retryInterval);
+        retryInterval = null;
+        logger.info("Anomaly retry worker stopped");
+    }
+};

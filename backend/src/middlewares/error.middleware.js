@@ -1,8 +1,10 @@
 import AppError from "../utils/appError.js";
+import logger from "../utils/logger.js";
 
 export const errorHandler = (err, req, res, next) => {
 
-    console.error("Error:", err);
+    const log = req.log ?? logger;
+    log.error({ err }, "Error:");
 
     const statusCode = err.statusCode || 500;
 

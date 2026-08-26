@@ -1,7 +1,10 @@
-import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading, findDetectedAnomalies } from "./reading.repository.js";
+import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading, findDetectedAnomalies, findReadingById } from "./reading.repository.js";
 import { predictReading } from "../ml/ml.service.js";
 import { saveAnomaly } from "../anomalies/anomaly.service.js";
 import { broadcast } from "../../websocket/websocket.manager.js";
+import asyncHandler from "../../utils/asyncHandler.js";
+import logger from "../../utils/logger.js";
+import { anomaliesDetected, mlFailures, mlPredictionDuration } from "../../utils/metrics.js";
 
 export const processReading = async (reading) => {
 
@@ -13,8 +16,15 @@ export const processReading = async (reading) => {
                 data: savedReading
             });
         } catch (error) {
-            console.error("Error broadcasting reading: service", error.message);
+            logger.error(
+                {
+                    err: error,
+                    readingId: savedReading._id
+                },
+                "Error broadcasting reading"
+            );
         }
+        const end = mlPredictionDuration.startTimer();
         try {
             const prediction = await predictReading(savedReading);
             await updateReading(
@@ -23,107 +33,190 @@ export const processReading = async (reading) => {
             );
             if (prediction.isAnomaly) {
                 try {
+                    anomaliesDetected.inc();
                     await saveAnomaly(savedReading, prediction);
                     await updateReading(
                         savedReading._id,
                         { anomalyStatus: "saved" }
                     );
                 } catch (error) {
-                    console.error("Error saving anomaly: service", error.message);
+                    logger.error(
+                        {
+                            err: error,
+                            readingId: savedReading._id
+                        },
+                        "Error saving anomaly"
+                    );
                 }
             }
         } catch (error) {
-            console.error(
-                "ML service failed:",
-                error.message
+            mlFailures.inc();
+            logger.error(
+                {
+                    err: error,
+                    readingId: savedReading._id
+                },
+                "ML service failed"
             );
+        } finally {
+            end();
         }
     } catch (error) {
-        console.error(
-            "Error saving reading:",
-            error.message
-        );
+        logger.error({ err: error }, "Error saving reading");
         throw error;
     }
 };
 
 export const retryPendingAnomalies = async () => {
-    const detectedAnomalies = await findDetectedAnomalies();
-    if (detectedAnomalies.length === 0) {
+
+    const detectedReadings = await findDetectedAnomalies();
+
+    if (detectedReadings.length === 0) {
         return;
     }
-    for (const anomaly of detectedAnomalies) {
+
+    for (const reading of detectedReadings) {
+
         try {
-            const anomalyData = anomaly.anomalyPrediction;
-            await saveAnomaly(anomaly.readingId, anomalyData);
+
+            const prediction = reading.anomalyPrediction;
+
+            await saveAnomaly(reading, prediction);
+
             await updateReading(
-                anomaly.readingId,
+                reading._id,
                 { anomalyStatus: "saved" }
             );
+
         } catch (error) {
-            console.error(
-                `Anomaly retry failed for ${anomaly.readingId}:`,
-                error.message
-            );
+
+            if (error.code === 11000) {
+
+                logger.info(
+                    { readingId: reading._id },
+                    "Anomaly already exists"
+                );
+
+                await updateReading(
+                    reading._id,
+                    { anomalyStatus: "saved" }
+                );
+
+            } else {
+
+                logger.error(
+                    {
+                        err: error,
+                        readingId: reading._id
+                    },
+                    "Anomaly retry failed"
+                );
+            }
         }
     }
-}
+};
 
 export const retryPendingML = async () => {
+
     const pendingReadings = await findPendingReadings();
+
     if (pendingReadings.length === 0) {
         return;
     }
+
     for (const reading of pendingReadings) {
+
         try {
+
             const prediction = await predictReading(reading);
-            if (prediction.isAnomaly) {
-                await saveAnomaly(reading, prediction);
-            }
+
             await updateReading(
                 reading._id,
-                { mlStatus: "processed" }
+                {
+                    mlStatus: "processed",
+                    anomalyStatus: prediction.isAnomaly
+                        ? "detected"
+                        : "none",
+                    anomalyPrediction: prediction
+                }
             );
 
+            if (prediction.isAnomaly) {
+
+                try {
+
+                    await saveAnomaly(reading, prediction);
+
+                    await updateReading(
+                        reading._id,
+                        {
+                            anomalyStatus: "saved"
+                        }
+                    );
+
+                } catch (error) {
+
+                    if (error.code === 11000) {
+
+                        logger.info(
+                            { readingId: reading._id },
+                            "Anomaly already exists"
+                        );
+
+                        await updateReading(
+                            reading._id,
+                            {
+                                anomalyStatus: "saved"
+                            }
+                        );
+
+                    } else {
+
+                        logger.error(
+                            {
+                                err: error,
+                                readingId: reading._id
+                            },
+                            "Anomaly save failed during ML retry"
+                        );
+                    }
+                }
+            }
+
         } catch (error) {
-            console.error(
-                `ML retry failed for ${reading._id}:`,
-                error.message
+
+            logger.error(
+                {
+                    err: error,
+                    readingId: reading._id
+                },
+                "ML retry failed"
             );
         }
     }
 };
 
-export const fetchLatestReadings = async () => {
-    try {
-        const readings = await findLatestReadings();
-        return readings;
-    } catch (error) {
-        console.error("Error fetching latest readings:", error.message);
-        throw error;
-    }
-}
+export const fetchLatestReadings = asyncHandler(async () => {
+    const readings = await findLatestReadings();
+    return readings;
+})
 
-export const fetchStationReadings = async (stationId, pageNumber, limitNumber, from, to) => {
-    try {
-        const skip = (pageNumber - 1) * limitNumber;
-        const [readings, total] = await Promise.all([
-            findReadingsByStation(stationId, { skip, limit: limitNumber, from, to }),
-            countReadingsByStation(stationId, { from, to })
-        ]);
-        const totalPages = Math.ceil(total / limitNumber);
+export const fetchStationReadings = asyncHandler(async (stationId, pageNumber, limitNumber, from, to) => {
+    const skip = (pageNumber - 1) * limitNumber;
+    const [readings, total] = await Promise.all([
+        findReadingsByStation(stationId, { skip, limit: limitNumber, from, to }),
+        countReadingsByStation(stationId, { from, to })
+    ]);
+    const totalPages = Math.ceil(total / limitNumber);
 
-        return {
-            readings,
-            pagination: {
-                total,
-                totalPages,
-                currentPage: pageNumber,
-                limit: limitNumber
-            }
-        };
-    } catch (error) {
-        console.error("Error fetching station readings: service", error.message);
-        throw error;
-    }
-}
+    return {
+        readings,
+        pagination: {
+            total,
+            totalPages,
+            currentPage: pageNumber,
+            limit: limitNumber
+        }
+    };
+});
+

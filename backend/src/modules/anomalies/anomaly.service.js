@@ -1,6 +1,7 @@
 import { broadcast } from "../../websocket/websocket.manager.js";
 import { countAnomalies, createAnomaly, findAnomalies, findAnomalyById, updateAnomalyStatusRepo } from "./anomaly.repository.js";
-import { retryPendingAnomalies } from "../readings/reading.service.js";
+import asyncHandler from "../../utils/asyncHandler.js";
+import logger from "../../utils/logger.js";
 
 export const saveAnomaly = async (reading, prediction) => {
 
@@ -20,11 +21,6 @@ export const saveAnomaly = async (reading, prediction) => {
     try {
 
         const anomaly = await createAnomaly(anomalyData);
-        
-        await updateReading(
-            reading._id,
-            { anomalyStatus: "saved" }
-        );
 
         try {
 
@@ -36,10 +32,7 @@ export const saveAnomaly = async (reading, prediction) => {
 
         } catch (error) {
 
-            console.error(
-                "Error broadcasting anomaly: service",
-                error.message
-            );
+            logger.error({ err: error }, "Error broadcasting anomaly: service");
         }
 
         return anomaly;
@@ -48,105 +41,69 @@ export const saveAnomaly = async (reading, prediction) => {
 
         if (error.code === 11000) {
 
-            console.log(
-                `Anomaly already exists for reading ${reading._id}`
-            );
-
-            await updateReading(
-                reading._id,
-                { anomalyStatus: "saved" }
+            logger.info(
+                { readingId: reading._id },
+                "Anomaly already exists for reading"
             );
 
             return null;
         }
-        console.error(
-            "Error saving anomaly: service",
-            error.message
-        );
+
+        logger.error({ err: error, readingId: reading._id }, "Error saving anomaly: service");
 
         throw error;
     }
 };
-export const fetchAnomalies = async (stationId, pageNumber, limitNumber, from, to) => {
-    try {
-        const skip = (pageNumber - 1) * limitNumber;
-        const options = {
-            skip,
+export const fetchAnomalies = asyncHandler(async (stationId, pageNumber, limitNumber, from, to) => {
+    const skip = (pageNumber - 1) * limitNumber;
+    const options = {
+        skip,
+        limit: limitNumber,
+        from,
+        to
+    };
+
+    const [anomalies, total] = await Promise.all([
+        findAnomalies(stationId, options),
+        countAnomalies(stationId, options)
+    ]);
+
+    return {
+        anomalies,
+        pagination: {
+            total,
+            page: pageNumber,
             limit: limitNumber,
-            from,
-            to
-        };
-
-        const [anomalies, total] = await Promise.all([
-            findAnomalies(stationId, options),
-            countAnomalies(stationId, options)
-        ]);
-
-        return {
-            anomalies,
-            pagination: {
-                total,
-                page: pageNumber,
-                limit: limitNumber,
-                totalPages: Math.ceil(total / limitNumber)
-            }
+            totalPages: Math.ceil(total / limitNumber)
         }
-    } catch (error) {
-        console.error("Error fetching anomalies: service", error.message);
-        throw error;
     }
-}
+})
 
-export const fetchAnomalyById = async (anomalyId) => {
-    try {
-        const anomaly = await findAnomalyById(anomalyId);
-        return anomaly;
-    } catch (error) {
-        console.error("Error fetching anomaly by id: service", error.message);
-        throw error;
+export const fetchAnomalyById = asyncHandler(async (anomalyId) => {
+    const anomaly = await findAnomalyById(anomalyId);
+    return anomaly;
+})
+
+export const updateAnomalyStatus = asyncHandler(async (anomalyId,status,resolvedBy = null) => {
+    const anomaly = await findAnomalyById(anomalyId);
+
+    if (!anomaly) {
+        throw new AppError("Anomaly not found", 404);
     }
-}
 
-export const updateAnomalyStatus = async (
-    anomalyId,
-    status,
-    resolvedBy = null
-) => {
-
-    try {
-
-        const anomaly = await findAnomalyById(anomalyId);
-
-        if (!anomaly) {
-            throw new Error("Anomaly not found");
-        }
-
-        if (anomaly.status === "resolved") {
-            throw new Error("Resolved anomaly cannot be updated");
-        }
-
-        const updates = {};
-
-        if (status === "resolved") {
-
-            updates.resolvedAt = new Date();
-            updates.resolvedBy = resolvedBy;
-
-        }
-
-        return await updateAnomalyStatusRepo(
-            anomalyId,
-            status,
-            updates
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Error updating anomaly status: service",
-            error.message
-        );
-
-        throw error;
+    if (anomaly.status === "resolved") {
+        throw new AppError("Resolved anomaly cannot be updated", 400);
     }
-};
+
+    const updates = {};
+
+    if (status === "resolved") {
+        updates.resolvedAt = new Date();
+        updates.resolvedBy = resolvedBy;
+    }
+    return await updateAnomalyStatusRepo(
+        anomalyId,
+        status,
+        updates
+    );
+});
