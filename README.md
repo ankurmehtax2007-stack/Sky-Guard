@@ -29,3 +29,14 @@ combining SkyGuard station observations with ERA5 reanalysis data.
 | Test | 2025 | 175,200 |
 | Final Test | 2026 | 84,480 |
 
+### Frontend
+
+- React.js - UI development
+- JavaScript / JSX - Application logic
+- Vite - Development server and build tool
+- CSS - Styling and responsive design
+- React Router - Page navigation
+- Recharts - Sensor data visualization
+- Fetch - Backend API communication
+- WebSocket - Real-time sensor updates
+
