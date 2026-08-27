@@ -8,10 +8,10 @@ services:
     networks:
       - sih-network
 
-  ml-service:
+  ml-service1:
     build:
-      context: ./ml-service
-    container_name: sih-ml-service-container
+      context: ./ml-service1
+    container_name: sih-ml-service1-container
     ports:
       - "8000:8000"
     networks:
@@ -22,9 +22,12 @@ services:
     container_name: sih-backend-container
     env_file:
       - ./backend/.env
+    environment:
+      ML_SERVICE_URL: http://ml-service1:8000
+      MQTT_BROKER: mqtt-broker
     depends_on:
       - mqtt-broker
-      - ml-service
+      - ml-service1
     networks:
       - sih-network
 
@@ -33,6 +36,8 @@ services:
     container_name: sih-simulator-container
     env_file:
       - ./simulator/.env
+    environment:
+      MQTT_BROKER: mqtt-broker
     depends_on:
       - mqtt-broker
     networks:

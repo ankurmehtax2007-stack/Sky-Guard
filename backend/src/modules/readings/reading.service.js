@@ -102,6 +102,18 @@ export const retryPendingAnomalies = async () => {
                     { anomalyStatus: "saved" }
                 );
 
+            } else if (error.name === "ValidationError") {
+
+                logger.error(
+                    { err: error, readingId: reading._id },
+                    "Anomaly retry skipped: stored prediction is invalid and cannot be saved"
+                );
+
+                await updateReading(
+                    reading._id,
+                    { anomalyStatus: "saved" }
+                );
+
             } else {
 
                 logger.error(
