@@ -8,6 +8,7 @@ import healthRoutes from "./health/health.routes.js";
 import pinoHttp from "pino-http";
 import logger from "./utils/logger.js";
 import register from "./utils/metrics.js";
+import cors from "cors";
 
 const app = express();
 app.use(pinoHttp({ logger }));
