@@ -38,6 +38,28 @@ services:
     networks:
       - sih-network
 
+  prometheus:
+    image: prom/prometheus
+    container_name: sih-prometheus-container
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - backend
+    networks:
+      - sih-network
+  
+  grafana:
+    image: grafana/grafana
+    container_name: sih-grafana-container
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - sih-network
+
 networks:
   sih-network:
     driver: bridge
