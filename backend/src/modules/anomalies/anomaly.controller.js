@@ -1,18 +1,18 @@
-import { paginationSchema } from "../readings/reading.validator.js";
+import { anomalyPaginationSchema, anomalyStatusSchema } from "./anomaly.validator.js";
 import { fetchAnomalies, fetchAnomalyById, updateAnomalyStatus } from "./anomaly.service.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 
 export const getAnomalies = asyncHandler(async (req, res) => {
-    const result = paginationSchema.safeParse(req.query);
+    const result = anomalyPaginationSchema.safeParse(req.query);
     if (!result.success) {
         return res.status(400).json({
             success: false,
-            message: "Invalid pagination parameters",
+            message: "Invalid query parameters",
             error: result.error.issues
         });
     }
-    const { stationId, page, limit, from, to } = result.data;
-    const anomalies = await fetchAnomalies(stationId, page, limit, from, to);
+    const { stationId, page, limit, from, to, sensor, severity, status } = result.data;
+    const anomalies = await fetchAnomalies(stationId, page, limit, from, to, { sensor, severity, status });
     return res.status(200).json({
         success: true,
         message: "Anomalies fetched successfully",
@@ -40,8 +40,9 @@ export const updateAnomalyStatusController = asyncHandler(async (req, res) => {
         });
     }
     const { anomalyId } = req.params;
-    const { status } = result.data;
-    const updatedAnomaly = await updateAnomalyStatus(anomalyId, status, req.user.id);
+    const { status, resolvedBy } = result.data;
+    const operator = req.user?.username || req.user?.email || req.user?.id || resolvedBy || "Operator";
+    const updatedAnomaly = await updateAnomalyStatus(anomalyId, status, operator);
     return res.status(200).json({
         success: true,
         message: "Anomaly status updated successfully",
@@ -51,16 +52,16 @@ export const updateAnomalyStatusController = asyncHandler(async (req, res) => {
 
 export const getStationAnomalies = asyncHandler(async (req, res) => {
     const { stationId } = req.params;
-    const result = paginationSchema.safeParse(req.query);
+    const result = anomalyPaginationSchema.safeParse(req.query);
     if (!result.success) {
         return res.status(400).json({
             success: false,
-            message: "Invalid pagination parameters",
+            message: "Invalid query parameters",
             error: result.error.issues
         });
     }
-    const { page, limit, from, to } = result.data;
-    const anomalies = await fetchAnomalies(stationId, page, limit, from, to);
+    const { page, limit, from, to, sensor, severity, status } = result.data;
+    const anomalies = await fetchAnomalies(stationId, page, limit, from, to, { sensor, severity, status });
     return res.status(200).json({
         success: true,
         message: "Anomalies fetched successfully",

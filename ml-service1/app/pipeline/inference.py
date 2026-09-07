@@ -137,13 +137,15 @@ def run_pipeline(records, iso_model, xgb_model, metadata, generate_llm=None):
         rec_gen = r.get('generate_report', r.get('generate_llm', generate_llm))
         is_anom = (d['decision'] != 'normal') or (d['root_cause'] != 'normal')
 
-        if is_anom and (rec_gen is True):
-            ai_rep = generate_ai_report(r, generate_report=True, only_on_anomaly=True)
+        if rec_gen is True or str(rec_gen).lower() == 'true':
+            ai_rep = generate_ai_report(r, generate_report=True, only_on_anomaly=False)
             r['llm_report'] = ai_rep.get('llm_report', '')
             r['llm_source'] = ai_rep.get('llm_source', 'mistral')
+            r['ai_recommendations'] = ai_rep.get('ai_recommendations', [])
         else:
             r['llm_report'] = ''
-            r['llm_source'] = 'skipped' if not is_anom else 'on_demand'
+            r['llm_source'] = 'on_demand_only'
+            r['ai_recommendations'] = []
 
         results.append(sanitize_record(r))
 

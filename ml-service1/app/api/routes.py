@@ -90,14 +90,16 @@ def feedback(req: Union[FeedbackRequest, dict[str, Any]]):
 @router.post('/generate-report')
 def generate_report_endpoint(req: dict[str, Any]):
     diagnostic = req.get('diagnostic') or req
-    instruction = req.get('instruction', 'Explain the incident and recommend safe maintenance actions.')
+    instruction = req.get('instruction', 'Explain the incident, recommend maintenance actions, and provide AI recommendations for improvements.')
     
-    # Force report generation on-demand for this anomaly
-    ai_rep = generate_ai_report(diagnostic, instruction=instruction, generate_report=True, only_on_anomaly=True)
+    # Force report generation on-demand for this station / telemetry
+    ai_rep = generate_ai_report(diagnostic, instruction=instruction, generate_report=True, only_on_anomaly=False)
     return {
         'status': 'success',
         'report': ai_rep.get('llm_report', ''),
         'llm_report': ai_rep.get('llm_report', ''),
+        'ai_recommendations': ai_rep.get('ai_recommendations', []),
+        'recommendations': ai_rep.get('ai_recommendations', []),
         'source': ai_rep.get('llm_source', 'mistral'),
         'provider': ai_rep.get('llm_source', 'mistral')
     }

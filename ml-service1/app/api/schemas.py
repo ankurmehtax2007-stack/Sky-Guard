@@ -50,10 +50,12 @@ class ExplanationDetail(BaseModel):
 class MaintenanceDetail(BaseModel):
     priority: str
     recommended_action: str
+    ai_recommendations: List[str] = Field(default_factory=list)
 
 class LlmDetail(BaseModel):
     provider: str = "none"
     report: str = ""
+    recommendations: List[str] = Field(default_factory=list)
 
 class AnalysisOutput(BaseModel):
     station: StationDetail
@@ -152,6 +154,7 @@ def format_analysis_response(r: dict) -> dict:
     maint = r.get("maintenance", {})
     maint_priority = str(maint.get("priority") or maint.get("engineering_priority") or f"{severity} - Nominal")
     maint_action = str(maint.get("recommended_action") or "Continue routine scheduled maintenance and monitoring.")
+    ai_recs = r.get("ai_recommendations") or maint.get("ai_recommendations") or []
 
     llm_report = str(r.get("llm_report") or "")
     llm_source = str(r.get("llm_source") or ("mistral" if llm_report else "none"))
@@ -202,11 +205,13 @@ def format_analysis_response(r: dict) -> dict:
             },
             "maintenance": {
                 "priority": maint_priority,
-                "recommended_action": maint_action
+                "recommended_action": maint_action,
+                "ai_recommendations": ai_recs
             },
             "llm": {
                 "provider": llm_source,
-                "report": llm_report
+                "report": llm_report,
+                "recommendations": ai_recs
             }
         }
     }

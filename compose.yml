@@ -20,6 +20,8 @@ services:
   backend:
     build: ./backend
     container_name: sih-backend-container
+    ports:
+      - "3000:3000"
     env_file:
       - ./backend/.env
     environment:

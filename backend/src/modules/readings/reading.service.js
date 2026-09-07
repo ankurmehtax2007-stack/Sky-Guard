@@ -2,7 +2,6 @@ import { saveReading, findLatestReadings, countReadingsByStation, findReadingsBy
 import { predictReading } from "../ml/ml.service.js";
 import { saveAnomaly } from "../anomalies/anomaly.service.js";
 import { broadcast } from "../../websocket/websocket.manager.js";
-import asyncHandler from "../../utils/asyncHandler.js";
 import logger from "../../utils/logger.js";
 import { anomaliesDetected, mlFailures, mlPredictionDuration } from "../../utils/metrics.js";
 
@@ -27,18 +26,20 @@ export const processReading = async (reading) => {
         const end = mlPredictionDuration.startTimer();
         try {
             const prediction = await predictReading(savedReading);
-            await updateReading(
-                savedReading._id,
-                { mlStatus: "processed", anomalyStatus: prediction.isAnomaly ? "detected" : "none", anomalyPrediction: prediction }
-            );
             if (prediction.isAnomaly) {
                 try {
                     anomaliesDetected.inc();
                     await saveAnomaly(savedReading, prediction);
-                    await updateReading(
+                    const updatedReading = await updateReading(
                         savedReading._id,
-                        { anomalyStatus: "saved" }
+                        { mlStatus: "processed", anomalyStatus: "saved", anomalyPrediction: prediction }
                     );
+                    try {
+                        broadcast({
+                            type: "READING_UPDATED",
+                            data: updatedReading
+                        });
+                    } catch (err) {}
                 } catch (error) {
                     logger.error(
                         {
@@ -47,7 +48,16 @@ export const processReading = async (reading) => {
                         },
                         "Error saving anomaly"
                     );
+                    await updateReading(
+                        savedReading._id,
+                        { mlStatus: "processed", anomalyStatus: "detected", anomalyPrediction: prediction }
+                    );
                 }
+            } else {
+                await updateReading(
+                    savedReading._id,
+                    { mlStatus: "processed", anomalyStatus: "none", anomalyPrediction: prediction }
+                );
             }
         } catch (error) {
             mlFailures.inc();
@@ -208,12 +218,12 @@ export const retryPendingML = async () => {
     }
 };
 
-export const fetchLatestReadings = asyncHandler(async () => {
+export const fetchLatestReadings = async () => {
     const readings = await findLatestReadings();
     return readings;
-})
+};
 
-export const fetchStationReadings = asyncHandler(async (stationId, pageNumber, limitNumber, from, to) => {
+export const fetchStationReadings = async (stationId, pageNumber, limitNumber, from, to) => {
     const skip = (pageNumber - 1) * limitNumber;
     const [readings, total] = await Promise.all([
         findReadingsByStation(stationId, { skip, limit: limitNumber, from, to }),
@@ -230,5 +240,5 @@ export const fetchStationReadings = asyncHandler(async (stationId, pageNumber, l
             limit: limitNumber
         }
     };
-});
+};
 

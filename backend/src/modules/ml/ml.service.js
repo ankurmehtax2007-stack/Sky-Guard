@@ -22,13 +22,20 @@ export const predictReading = async (reading) => {
         const result = await response.json();
         const analysis = result.analysis;
 
+        const rootCause = analysis.anomaly.root_cause;
+        const faultType = (rootCause && rootCause !== "normal" && rootCause !== "known_anomaly")
+            ? rootCause
+            : (analysis.anomaly.decision && analysis.anomaly.decision !== "normal" && analysis.anomaly.decision !== "known_anomaly"
+                ? analysis.anomaly.decision
+                : "sensor_anomaly");
+
         return {
             isAnomaly: analysis.anomaly.detected,
             sensor: analysis.anomaly.root_cause,
-            anomalyType: analysis.anomaly.decision,
+            anomalyType: faultType,
             severity: analysis.anomaly.severity.toLowerCase(),
             confidence: analysis.anomaly.confidence,
-            message: `ML detected ${analysis.anomaly.root_cause}`,
+            message: `ML detected ${rootCause || analysis.anomaly.decision}`,
             action: analysis.maintenance.recommended_action,
             analysis
         };

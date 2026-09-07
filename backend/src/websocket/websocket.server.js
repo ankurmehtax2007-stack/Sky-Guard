@@ -1,5 +1,6 @@
 import { WebSocketServer } from "ws";
 import { addClient, broadcast, removeClient } from "./websocket.manager.js";
+import { activeWebSocketConnections } from "../utils/metrics.js";
 import logger from "../utils/logger.js";
 
 export const initializeWebSocket = (server) => {

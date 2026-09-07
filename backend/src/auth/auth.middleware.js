@@ -44,6 +44,31 @@ export const authenticateUser = async (req, res, next) => {
     }
 };
 
+export const optionalAuthenticateUser = async (req, res, next) => {
+    const authHeader = req.headers["authorization"];
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+        return next();
+    }
+
+    try {
+        const decoded = jwt.verify(token, config.accessTokenSecret);
+        const user = await findUserById(decoded.userId);
+        if (user) {
+            req.user = user;
+        }
+    } catch {
+        // Continue even if token is invalid
+    }
+    next();
+};
+
 export const authorizeRole = (allowedRoles) => {
     return (req, res, next) => {
         if (!req.user) {
