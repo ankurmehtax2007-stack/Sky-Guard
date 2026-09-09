@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 
 const Stations = lazy(() => import("./pages/Stations"));
@@ -30,18 +31,100 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/overview" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/stations" element={<Stations />} />
+
+          {/* Protected Mission Control Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stations"
+            element={
+              <ProtectedRoute>
+                <Stations />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/monitoring" element={<Navigate to="/stations" replace />} />
-          <Route path="/stations/:stationId" element={<StationDetail />} />
-          <Route path="/map" element={<IndiaMapPage />} />
-          <Route path="/lithos" element={<IndiaMapPage />} />
-          <Route path="/anomalies" element={<Anomalies />} />
-          <Route path="/anomalies/:anomalyId" element={<AnomalyDetail />} />
-          <Route path="/insights" element={<Insights />} />
-          <Route path="/health" element={<Health />} />
-          <Route path="/system" element={<SystemControl />} />
-          <Route path="/users" element={<Users />} />
+          <Route
+            path="/stations/:stationId"
+            element={
+              <ProtectedRoute>
+                <StationDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/map"
+            element={
+              <ProtectedRoute>
+                <IndiaMapPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lithos"
+            element={
+              <ProtectedRoute>
+                <IndiaMapPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/anomalies"
+            element={
+              <ProtectedRoute>
+                <Anomalies />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/anomalies/:anomalyId"
+            element={
+              <ProtectedRoute>
+                <AnomalyDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/insights"
+            element={
+              <ProtectedRoute>
+                <Insights />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/health"
+            element={
+              <ProtectedRoute>
+                <Health />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/system"
+            element={
+              <ProtectedRoute>
+                <SystemControl />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Restricted Route */}
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <Users />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import { findUserByEmail, createUser } from "./user.repository.js";
+import { findUserByEmail, createUser, findUserById } from "./user.repository.js";
 import { createSession, saveSession, findSessionById } from "./session.repository.js";
 
 export const loginService = async (email, password, userAgent, ip) => {
@@ -33,7 +33,13 @@ export const loginService = async (email, password, userAgent, ip) => {
     await saveSession(session);
 
     const accessToken = jwt.sign(
-        { userId: user._id },
+        {
+            userId: user._id,
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+        },
         config.accessTokenSecret,
         { expiresIn: "15m" }
     );
@@ -50,7 +56,7 @@ export const loginService = async (email, password, userAgent, ip) => {
     };
 };
 
-export const registerService = async (username, email, password, userAgent, ip) => {
+export const registerService = async (username, email, password, role = "viewer", userAgent, ip) => {
     const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
@@ -59,13 +65,16 @@ export const registerService = async (username, email, password, userAgent, ip) 
         throw err;
     }
 
+    const validRoles = ["admin", "operator", "engineer", "viewer"];
+    const assignedRole = validRoles.includes(role?.toLowerCase()) ? role.toLowerCase() : "viewer";
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await createUser({
         username,
         email,
         password: hashedPassword,
-        role: "user",
+        role: assignedRole,
     });
 
     const session = await createSession({ user: newUser._id, userAgent, ip });
@@ -80,7 +89,13 @@ export const registerService = async (username, email, password, userAgent, ip) 
     await saveSession(session);
 
     const accessToken = jwt.sign(
-        { userId: newUser._id },
+        {
+            userId: newUser._id,
+            id: newUser._id,
+            username: newUser.username,
+            email: newUser.email,
+            role: newUser.role,
+        },
         config.accessTokenSecret,
         { expiresIn: "15m" }
     );
@@ -124,4 +139,64 @@ export const logoutService = async (refreshToken) => {
     await saveSession(session);
 
     return { message: "User logged out successfully" };
+};
+
+export const refreshSessionService = async (refreshToken) => {
+    if (!refreshToken) {
+        const err = new Error("No refresh token provided");
+        err.status = 401;
+        throw err;
+    }
+
+    let decoded;
+    try {
+        decoded = jwt.verify(refreshToken, config.refreshTokenSecret);
+    } catch {
+        const err = new Error("Invalid or expired refresh token");
+        err.status = 401;
+        throw err;
+    }
+
+    const session = await findSessionById(decoded.sessionId);
+    if (!session || session.revoked) {
+        const err = new Error("Session revoked or expired");
+        err.status = 401;
+        throw err;
+    }
+
+    const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
+    if (!isMatch) {
+        const err = new Error("Invalid refresh token credentials");
+        err.status = 401;
+        throw err;
+    }
+
+    const user = await findUserById(session.user);
+    if (!user) {
+        const err = new Error("User associated with session not found");
+        err.status = 401;
+        throw err;
+    }
+
+    const accessToken = jwt.sign(
+        {
+            userId: user._id,
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+        },
+        config.accessTokenSecret,
+        { expiresIn: "15m" }
+    );
+
+    return {
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+        },
+        accessToken,
+    };
 };

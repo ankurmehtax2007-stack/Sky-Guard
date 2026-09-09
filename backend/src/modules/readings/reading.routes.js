@@ -1,13 +1,14 @@
 import { Router } from "express";
-// local modules import
 import {
     getLatestReadings,
     getStationReadings,
 } from "./reading.controller.js";
+import { authenticateUser, authorize } from "../../auth/auth.middleware.js";
+import { PERMISSIONS } from "../../auth/rbac/permissions.js";
 
 const readingRoutes = Router();
 
-readingRoutes.route("/").get(getLatestReadings);
-readingRoutes.route("/:stationId").get(getStationReadings);
+readingRoutes.route("/").get(authenticateUser, authorize(PERMISSIONS.SENSORS_READ), getLatestReadings);
+readingRoutes.route("/:stationId").get(authenticateUser, authorize(PERMISSIONS.SENSORS_READ), getStationReadings);
 
 export default readingRoutes;
