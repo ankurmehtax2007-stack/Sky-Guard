@@ -1,5 +1,5 @@
 // local modules import
-import { fetchLatestReadings, fetchStationReadings } from "./reading.service.js";
+import { fetchLatestReadings, fetchStationReadings, fetchTotalReadingsCount } from "./reading.service.js";
 import { paginationSchema } from "./reading.validator.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 
@@ -9,6 +9,16 @@ export const getLatestReadings = asyncHandler(async (req, res) => {
         success: true,
         message: "Latest readings fetched successfully",
         data: readings,
+    });
+});
+
+export const getTotalReadingsCount = asyncHandler(async (req, res) => {
+    const stationIds = req.query.stations ? req.query.stations.split(",") : null;
+    const total = await fetchTotalReadingsCount(stationIds);
+    res.status(200).json({
+        success: true,
+        message: "Total readings count fetched successfully",
+        data: { total },
     });
 });
 

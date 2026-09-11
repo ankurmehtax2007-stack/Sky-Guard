@@ -1,4 +1,4 @@
-import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading, findDetectedAnomalies, findReadingById } from "./reading.repository.js";
+import { saveReading, findLatestReadings, countReadingsByStation, findReadingsByStation, findPendingReadings, updateReading, findDetectedAnomalies, findReadingById, countTotalReadings } from "./reading.repository.js";
 import { predictReading } from "../ml/ml.service.js";
 import { saveAnomaly } from "../anomalies/anomaly.service.js";
 import { broadcast } from "../../websocket/websocket.manager.js";
@@ -240,5 +240,10 @@ export const fetchStationReadings = async (stationId, pageNumber, limitNumber, f
             limit: limitNumber
         }
     };
+};
+
+export const fetchTotalReadingsCount = async (stationIds = null) => {
+    const total = await countTotalReadings(stationIds);
+    return total;
 };
 

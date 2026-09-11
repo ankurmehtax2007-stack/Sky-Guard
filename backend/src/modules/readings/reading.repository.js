@@ -117,6 +117,17 @@ export const findDetectedAnomalies = async () => {
     }
 }
 
+export const countTotalReadings = async (stationIds = null) => {
+    try {
+        const query = stationIds && Array.isArray(stationIds) ? { stationId: { $in: stationIds } } : {};
+        const count = await SensorReading.countDocuments(query);
+        return count;
+    } catch (error) {
+        logger.error({ error }, "Error counting total readings: repository");
+        throw error;
+    }
+};
+
 export const updateReading = async (id, updates) => {
     try {
         const reading = await SensorReading.findByIdAndUpdate(id, updates, { returnDocument: "after" });
