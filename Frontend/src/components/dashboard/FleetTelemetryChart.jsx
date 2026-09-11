@@ -13,7 +13,7 @@ import {
 import { getStationReadings } from "../../api/reading";
 import { SENSOR_RANGES } from "../../utils/constants";
 import { formatDateShort } from "../../utils/formatters";
-import { Activity, Thermometer, Droplets, Gauge } from "lucide-react";
+import { Activity, Thermometer, Droplets, Gauge, SlidersHorizontal } from "lucide-react";
 
 const STATION_PALETTE = {
   AWS_01: "#38bdf8", // Sky Blue
@@ -22,8 +22,11 @@ const STATION_PALETTE = {
   DEFAULT: "#fbbf24", // Amber
 };
 
+const TIME_RANGES = ["1H", "6H", "24H", "7D", "30D"];
+
 export function FleetTelemetryChart() {
   const [selectedSensor, setSelectedSensor] = useState("temperature"); // temperature, humidity, pressure
+  const [selectedRange, setSelectedRange] = useState("24H");
   const [readingsData, setReadingsData] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -89,7 +92,6 @@ export function FleetTelemetryChart() {
     const stations = Object.keys(readingsData);
     if (stations.length === 0) return [];
 
-    // Find the station with the most readings to form timeline base
     const baseStation = stations.reduce((max, s) => {
       return (readingsData[s]?.length || 0) > (readingsData[max]?.length || 0) ? s : max;
     }, stations[0]);
@@ -125,41 +127,62 @@ export function FleetTelemetryChart() {
   const sensorConfig = SENSOR_RANGES[selectedSensor] || SENSOR_RANGES.temperature;
 
   return (
-    <div className="telemetry-card">
-      <div className="telemetry-card-header">
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Activity size={16} style={{ color: "var(--color-accent)" }} />
-            <span className="section-title-lg">Multi-Station Telemetry Stream</span>
+    <div className="telemetry-stream-card">
+      <div className="telemetry-stream-header">
+        <div className="telemetry-stream-title-group">
+          <div className="telemetry-icon-box">
+            <Activity size={18} style={{ color: "#38bdf8" }} />
           </div>
-          <p style={{ fontSize: "11px", color: "var(--color-text-muted)", marginTop: "2px" }}>
-            Synchronized live sensor trends across automatic weather stations
-          </p>
+          <div>
+            <h2 className="telemetry-stream-title">Multi-Station Telemetry Stream</h2>
+            <p className="telemetry-stream-subtitle">
+              Real-time view of temperature, humidity and pressure across selected stations
+            </p>
+          </div>
         </div>
 
-        {/* Sensor switch buttons */}
-        <div className="sensor-tab-group">
-          <button
-            className={`sensor-tab-btn ${selectedSensor === "temperature" ? "sensor-tab-btn--active" : ""}`}
-            onClick={() => setSelectedSensor("temperature")}
-          >
-            <Thermometer size={12} style={{ display: "inline", marginRight: "4px", verticalAlign: "middle" }} />
-            Temp (°C)
-          </button>
-          <button
-            className={`sensor-tab-btn ${selectedSensor === "humidity" ? "sensor-tab-btn--active" : ""}`}
-            onClick={() => setSelectedSensor("humidity")}
-          >
-            <Droplets size={12} style={{ display: "inline", marginRight: "4px", verticalAlign: "middle" }} />
-            Humidity (%)
-          </button>
-          <button
-            className={`sensor-tab-btn ${selectedSensor === "pressure" ? "sensor-tab-btn--active" : ""}`}
-            onClick={() => setSelectedSensor("pressure")}
-          >
-            <Gauge size={12} style={{ display: "inline", marginRight: "4px", verticalAlign: "middle" }} />
-            Pressure (hPa)
-          </button>
+        {/* Controls: Time ranges & Sensor switcher */}
+        <div className="telemetry-controls-wrap">
+          {/* Time range pills */}
+          <div className="telemetry-range-group">
+            {TIME_RANGES.map((rng) => (
+              <button
+                key={rng}
+                className={`telemetry-range-btn ${selectedRange === rng ? "telemetry-range-btn--active" : ""}`}
+                onClick={() => setSelectedRange(rng)}
+              >
+                {rng}
+              </button>
+            ))}
+          </div>
+
+          {/* Sensor switch buttons */}
+          <div className="telemetry-sensor-group">
+            <button
+              className={`telemetry-sensor-btn ${selectedSensor === "temperature" ? "telemetry-sensor-btn--active" : ""}`}
+              onClick={() => setSelectedSensor("temperature")}
+              title="Temperature"
+            >
+              <Thermometer size={12} style={{ display: "inline", marginRight: "3px" }} />
+              Temp
+            </button>
+            <button
+              className={`telemetry-sensor-btn ${selectedSensor === "humidity" ? "telemetry-sensor-btn--active" : ""}`}
+              onClick={() => setSelectedSensor("humidity")}
+              title="Humidity"
+            >
+              <Droplets size={12} style={{ display: "inline", marginRight: "3px" }} />
+              Hum
+            </button>
+            <button
+              className={`telemetry-sensor-btn ${selectedSensor === "pressure" ? "telemetry-sensor-btn--active" : ""}`}
+              onClick={() => setSelectedSensor("pressure")}
+              title="Pressure"
+            >
+              <Gauge size={12} style={{ display: "inline", marginRight: "3px" }} />
+              Press
+            </button>
+          </div>
         </div>
       </div>
 
@@ -177,67 +200,67 @@ export function FleetTelemetryChart() {
         <div style={{ width: "100%", height: 260, minHeight: 260 }}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
             <AreaChart data={chartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
-            <defs>
+              <defs>
+                {Object.keys(readingsData).map((stId) => {
+                  const color = STATION_PALETTE[stId] || STATION_PALETTE.DEFAULT;
+                  return (
+                    <linearGradient key={stId} id={`grad_${stId}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={color} stopOpacity={0.28} />
+                      <stop offset="95%" stopColor={color} stopOpacity={0.0} />
+                    </linearGradient>
+                  );
+                })}
+              </defs>
+
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.06)" />
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={{ stroke: "rgba(255, 255, 255, 0.1)" }}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={false}
+                unit={` ${sensorConfig.unit}`}
+                domain={["auto", "auto"]}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#0d1527",
+                  borderColor: "rgba(255, 255, 255, 0.15)",
+                  borderRadius: "10px",
+                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.6)",
+                  fontSize: "12px",
+                  color: "#f1f5f9",
+                }}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                iconType="circle"
+              />
+
               {Object.keys(readingsData).map((stId) => {
                 const color = STATION_PALETTE[stId] || STATION_PALETTE.DEFAULT;
                 return (
-                  <linearGradient key={stId} id={`grad_${stId}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0.0} />
-                  </linearGradient>
+                  <Area
+                    key={stId}
+                    type="monotone"
+                    dataKey={stId}
+                    name={stId}
+                    stroke={color}
+                    strokeWidth={2.4}
+                    fillOpacity={1}
+                    fill={`url(#grad_${stId})`}
+                    dot={{ r: 2.5, fill: color }}
+                    activeDot={{ r: 5.5, stroke: "#ffffff", strokeWidth: 2 }}
+                    connectNulls
+                  />
                 );
               })}
-            </defs>
-
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.08)" />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 10, fill: "#64748b" }}
-              tickLine={false}
-              axisLine={{ stroke: "rgba(148, 163, 184, 0.15)" }}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: "#64748b" }}
-              tickLine={false}
-              axisLine={false}
-              unit={` ${sensorConfig.unit}`}
-              domain={["auto", "auto"]}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#0f172a",
-                borderColor: "rgba(148, 163, 184, 0.2)",
-                borderRadius: "8px",
-                boxShadow: "0 10px 25px -5px rgba(0,0,0,0.6)",
-                fontSize: "12px",
-                color: "#f1f5f9",
-              }}
-            />
-            <Legend
-              wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-              iconType="circle"
-            />
-
-            {Object.keys(readingsData).map((stId) => {
-              const color = STATION_PALETTE[stId] || STATION_PALETTE.DEFAULT;
-              return (
-                <Area
-                  key={stId}
-                  type="monotone"
-                  dataKey={stId}
-                  name={stId}
-                  stroke={color}
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill={`url(#grad_${stId})`}
-                  dot={{ r: 2, fill: color }}
-                  activeDot={{ r: 5, stroke: "#ffffff", strokeWidth: 1.5 }}
-                  connectNulls
-                />
-              );
-            })}
-          </AreaChart>
-        </ResponsiveContainer>
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       )}
     </div>
