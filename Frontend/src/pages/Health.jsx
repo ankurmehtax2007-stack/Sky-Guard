@@ -36,7 +36,7 @@ export function Health() {
           <div>
             <h2 className="page-heading">Infrastructure Health &amp; Pipeline Architecture</h2>
             <p className="page-description">
-              End-to-end distributed system monitoring for Smart India Hackathon
+              End-to-end distributed system monitoring for SkyGuard AI
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

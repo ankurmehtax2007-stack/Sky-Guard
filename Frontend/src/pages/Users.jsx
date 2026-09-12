@@ -7,22 +7,7 @@ import { EmptyTableRow } from "../components/common/EmptyState";
 import { Modal } from "../components/common/Modal";
 import { InlineError } from "../components/common/ErrorState";
 import { parseApiError } from "../utils/formatters";
-import { Trash2, Pencil, Shield } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-
-const getRoleBadgeStyle = (r) => {
-  switch (r) {
-    case "admin":
-      return { bg: "rgba(239, 68, 68, 0.15)", text: "#f87171", border: "rgba(239, 68, 68, 0.3)" };
-    case "engineer":
-      return { bg: "rgba(168, 85, 247, 0.15)", text: "#c084fc", border: "rgba(168, 85, 247, 0.3)" };
-    case "operator":
-      return { bg: "rgba(14, 165, 233, 0.15)", text: "#38bdf8", border: "rgba(14, 165, 233, 0.3)" };
-    case "viewer":
-    default:
-      return { bg: "rgba(16, 185, 129, 0.15)", text: "#34d399", border: "rgba(16, 185, 129, 0.3)" };
-  }
-};
+import { Trash2, Pencil } from "lucide-react";
 
 function EditUserModal({ user, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -80,10 +65,8 @@ function EditUserModal({ user, onClose, onSaved }) {
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
           disabled={saving}
         >
-          <option value="viewer">Viewer</option>
-          <option value="operator">Operator</option>
-          <option value="engineer">Engineer</option>
-          <option value="admin">Admin</option>
+          <option value="user">user</option>
+          <option value="admin">admin</option>
         </select>
       </div>
       {error && <InlineError message={error} />}
@@ -100,7 +83,6 @@ function EditUserModal({ user, onClose, onSaved }) {
 }
 
 export default function Users() {
-  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -167,76 +149,36 @@ export default function Users() {
                   ) : users.length === 0 ? (
                     <EmptyTableRow cols={4} message="No users found." />
                   ) : (
-                    users.map((u) => {
-                      const isSelf = currentUser && (u._id === currentUser.id || u._id === currentUser._id || u.email === currentUser.email);
-                      const rStyle = getRoleBadgeStyle(u.role);
-
-                      return (
-                        <tr key={u._id}>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ fontWeight: 500 }}>{u.username}</span>
-                              {isSelf && (
-                                <span
-                                  style={{
-                                    fontSize: "10px",
-                                    fontWeight: 700,
-                                    textTransform: "uppercase",
-                                    padding: "1px 5px",
-                                    borderRadius: "4px",
-                                    background: "rgba(14, 165, 233, 0.15)",
-                                    color: "var(--color-accent-hover)",
-                                    border: "1px solid rgba(14, 165, 233, 0.3)",
-                                  }}
-                                >
-                                  You
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td>{u.email}</td>
-                          <td>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                padding: "2px 8px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.4px",
-                                background: rStyle.bg,
-                                color: rStyle.text,
-                                border: `1px solid ${rStyle.border}`,
-                              }}
+                    users.map((u) => (
+                      <tr key={u._id}>
+                        <td>{u.username}</td>
+                        <td>{u.email}</td>
+                        <td>
+                          <span className={`badge ${u.role === "admin" ? "badge-severity-high" : "badge-resolved"}`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="row-actions">
+                            <button
+                              className="btn btn-ghost btn-xs"
+                              onClick={() => setEditingUser(u)}
+                              aria-label={`Edit user ${u.username}`}
                             >
-                              {u.role}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="row-actions">
-                              <button
-                                className="btn btn-ghost btn-xs"
-                                onClick={() => setEditingUser(u)}
-                                aria-label={`Edit user ${u.username}`}
-                                title="Edit user role & profile"
-                              >
-                                <Pencil size={13} />
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs btn-danger"
-                                onClick={() => handleDelete(u._id)}
-                                disabled={deletingId === u._id || isSelf}
-                                aria-label={`Delete user ${u.username}`}
-                                title={isSelf ? "Cannot delete your own active account" : "Delete user"}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-xs btn-danger"
+                              onClick={() => handleDelete(u._id)}
+                              disabled={deletingId === u._id}
+                              aria-label={`Delete user ${u.username}`}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>

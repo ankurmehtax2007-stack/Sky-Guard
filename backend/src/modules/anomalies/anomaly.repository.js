@@ -110,7 +110,7 @@ export const findAnomalyById = async (anomalyId) => {
         if (!mongoose.Types.ObjectId.isValid(anomalyId)) {
             return null;
         }
-        const anomaly = await Anomaly.findById(anomalyId).lean();
+        const anomaly = await Anomaly.findById(anomalyId).populate("readingId").lean();
         return anomaly;
     } catch (error) {
         logger.error({ error }, "Error fetching anomaly by id: repository");

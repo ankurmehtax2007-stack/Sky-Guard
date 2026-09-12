@@ -256,10 +256,11 @@ export default function Insights() {
 
   return (
     <AppLayout pageTitle="Explainable AI &amp; LLM Insights">
-      <div className="page-stack">
+      <div className="page-stack xai-llm-page">
         {/* ── Header Controls & Station Selector ── */}
         <div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
           <div>
+            <div className="xai-llm-text-cover">
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
                 style={{
@@ -280,6 +281,7 @@ export default function Insights() {
             <p className="page-description">
               Multi-source 5-tier machine learning inference, SHAP attribution trees &amp; Mistral LLM root-cause briefings
             </p>
+            </div>
           </div>
 
           {/* Station Selector Pills */}
@@ -387,7 +389,10 @@ export default function Insights() {
                       backgroundColor: "#0f172a",
                       borderColor: "rgba(255,255,255,0.1)",
                       borderRadius: "8px",
+                      color: "#ffffff",
                     }}
+                    itemStyle={{ color: "#ffffff" }}
+                    labelStyle={{ color: "#ffffff", fontWeight: 600, marginBottom: "4px" }}
                   />
                   <Bar dataKey="impact" radius={[0, 4, 4, 0]}>
                     {shapData.map((entry, index) => (
@@ -439,7 +444,10 @@ export default function Insights() {
                       backgroundColor: "#0f172a",
                       borderColor: "rgba(255,255,255,0.1)",
                       borderRadius: "8px",
+                      color: "#ffffff",
                     }}
+                    itemStyle={{ color: "#ffffff" }}
+                    labelStyle={{ color: "#ffffff", fontWeight: 600, marginBottom: "4px" }}
                   />
                 </RadarChart>
               </ResponsiveContainer>
@@ -590,6 +598,7 @@ export default function Insights() {
               color: "#cbd5e1",
             }}
           >
+            <div className="xai-llm-text-cover xai-llm-report-cover">
             {loadingReport ? (
               <div style={{ textAlign: "center", padding: "32px 16px" }}>
                 <RotateCw size={26} className="spin" style={{ color: "#818cf8", margin: "0 auto 12px" }} />
@@ -638,6 +647,7 @@ export default function Insights() {
                 </button>
               </div>
             )}
+            </div>
           </div>
 
           {/* Operator Feedback Buttons */}

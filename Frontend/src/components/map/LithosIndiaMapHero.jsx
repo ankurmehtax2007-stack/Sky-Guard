@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useRealtimeReadings } from "../../hooks/useRealtimeData";
 import { useAnomalies } from "../../hooks/useAnomalies";
@@ -64,8 +64,6 @@ export function LithosIndiaMapHero() {
   const { data: anomalies } = useAnomalies();
   const [selectedStationId, setSelectedStationId] = useState("AWS_01");
   const [activeLayer, setActiveLayer] = useState("all"); // all | stations | geology | radar
-  const [cursorPos, setCursorPos] = useState({ x: 400, y: 450 });
-  const mapContainerRef = useRef(null);
 
   const selectedNode = STATION_NODES[selectedStationId] || STATION_NODES.AWS_01;
   const currentReading = readings.find((r) => r.stationId === selectedStationId);
@@ -75,15 +73,6 @@ export function LithosIndiaMapHero() {
     (currentReading?.anomalyStatus && currentReading.anomalyStatus !== "none") ||
     (currentReading?.anomalyPrediction?.isAnomaly) ||
     anomalies.some((a) => a.stationId === selectedStationId && a.status === "pending");
-
-  // Track cursor position inside map for dynamic spotlight
-  const handleMouseMove = (e) => {
-    if (!mapContainerRef.current) return;
-    const rect = mapContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setCursorPos({ x, y });
-  };
 
   return (
     <div
@@ -197,8 +186,6 @@ export function LithosIndiaMapHero() {
       >
         {/* Left: Full-Screen Interactive Vector India Map */}
         <div
-          ref={mapContainerRef}
-          onMouseMove={handleMouseMove}
           style={{
             position: "relative",
             backgroundColor: "#050811",
@@ -218,21 +205,6 @@ export function LithosIndiaMapHero() {
                 "radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0)",
               backgroundSize: "40px 40px",
               pointerEvents: "none",
-            }}
-          />
-
-          {/* Dynamic Spotlight Glow under Cursor */}
-          <div
-            style={{
-              position: "absolute",
-              width: "480px",
-              height: "480px",
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(232, 112, 42, 0.12) 0%, rgba(14, 165, 233, 0.05) 45%, transparent 70%)",
-              transform: `translate(${cursorPos.x - 240}px, ${cursorPos.y - 240}px)`,
-              pointerEvents: "none",
-              transition: "transform 0.08s ease-out",
-              zIndex: 1,
             }}
           />
 
@@ -273,15 +245,22 @@ export function LithosIndiaMapHero() {
             </div>
           </div>
 
+          {/* Zoomed-in night-side Earth: India sits on the illuminated globe surface. */}
+          <div className="india-earth-globe" aria-label="Night satellite view of India on Earth">
+            <div className="india-earth-atmosphere" />
+            <div className="india-earth-night-lights" />
+            <div className="india-earth-clouds" />
+
           {/* SVG Map of India with 100% Accurate Real Boundaries */}
           <svg
             viewBox="0 0 1000 1000"
             style={{
-              width: "100%",
-              height: "100%",
+              width: "92%",
+              height: "92%",
               maxHeight: "88vh",
-              filter: "drop-shadow(0 25px 50px rgba(0,0,0,0.9))",
-              zIndex: 2,
+              position: "relative",
+              zIndex: 3,
+              filter: "brightness(1.05) contrast(1.2) drop-shadow(0 20px 34px rgba(0,0,0,0.72))",
             }}
           >
             <defs>
@@ -306,7 +285,7 @@ export function LithosIndiaMapHero() {
               width="1000"
               height="1000"
               style={{
-                filter: "brightness(0.9) contrast(1.1)",
+                filter: "brightness(1.28) contrast(1.28) saturate(0.65) drop-shadow(0 0 12px rgba(56,189,248,0.18))",
               }}
             />
 
@@ -418,6 +397,7 @@ export function LithosIndiaMapHero() {
               );
             })}
           </svg>
+          </div>
         </div>
 
         {/* Right: Selected Station Telemetry & Crustal Dossier */}

@@ -4,7 +4,7 @@ import { useRealtimeAnomalies } from "../../hooks/useRealtimeData";
 import { SeverityBadge } from "../common/StatusBadge";
 import { ErrorState } from "../common/ErrorState";
 import { formatRelativeTime, formatSensorValue, getSensorLabel, formatFaultType } from "../../utils/formatters";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 function AnomalyAlertRow({ anomaly }) {
   const isCritical = anomaly.severity === "critical";
@@ -14,82 +14,77 @@ function AnomalyAlertRow({ anomaly }) {
   const faultLabel = formatFaultType(anomaly.anomalyType, anomaly.sensor, anomaly.value);
 
   return (
-    <div className={`active-anomaly-row ${isCritical ? "active-anomaly-row--critical" : ""}`}>
-      <div className="active-anomaly-station-cell">
-        <Link to={`/stations/${anomaly.stationId}`} className="active-anomaly-station-link">
-          {anomaly.stationId}
-        </Link>
-      </div>
-      <div className="active-anomaly-info-cell">
-        <span className="active-anomaly-title">
+    <div className={`anomaly-alert-row${isCritical ? " anomaly-alert-row--critical" : ""}`}>
+      <Link to={`/stations/${anomaly.stationId}`} className="anomaly-alert-station table-link">
+        {anomaly.stationId}
+      </Link>
+      <div className="anomaly-alert-body">
+        <span className="anomaly-alert-primary">
           {getSensorLabel(anomaly.sensor)}
           {faultLabel ? ` — ${faultLabel}` : ""}
         </span>
-        <span className="active-anomaly-detected">
+        <span className="anomaly-alert-secondary">
           Detected value: <strong>{value}</strong>
         </span>
       </div>
       {hasConfidence && (
-        <span className="active-anomaly-ai-badge">
+        <span className="anomaly-confidence">
           {(anomaly.confidence * 100).toFixed(0)}% AI
         </span>
       )}
       <SeverityBadge severity={anomaly.severity} />
-      <span className="active-anomaly-time-cell">{time}</span>
+      <span className="anomaly-alert-time">{time}</span>
     </div>
   );
 }
 
 export function AnomalyOverviewPanel() {
   const { data: baseAnomalies, loading, error, refetch } = useAnomalies();
+
+  // Merge REST + real-time WebSocket anomalies
   const allAnomalies = useRealtimeAnomalies(baseAnomalies);
 
   if (error) {
     return <ErrorState message={`Unable to load anomalies. ${error}`} onRetry={refetch} />;
   }
 
-  // Active (pending) anomalies, most recent first
+  // Only show active (pending) anomalies, most recent first
   const active = allAnomalies
     .filter((a) => a.status === "pending")
     .slice(0, 6);
 
   return (
-    <div className="active-anomalies-card">
-      <div className="active-anomalies-header">
-        <div className="active-anomalies-title-wrap">
-          <div className="active-anomalies-icon-badge">
-            <AlertTriangle size={18} style={{ color: "#ef4444" }} />
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <h2 className="active-anomalies-title">Active Anomalies Live Incidents</h2>
-              {!loading && active.length > 0 && (
-                <span className="active-anomalies-count-badge">
-                  {active.length} Active
-                </span>
-              )}
-            </div>
-            <p className="active-anomalies-subtitle">
-              Live automated alerts detected across fleet sensors requiring operational triage
-            </p>
-          </div>
+    <div>
+      <div className="section-header">
+        <div className="section-header-left">
+          <span className="section-title-lg">Active Anomalies</span>
+          {!loading && active.length > 0 && (
+            <span
+              className="section-count"
+              style={{
+                background: "var(--color-red-badge)",
+                borderColor: "#fecaca",
+                color: "var(--color-red-text)",
+              }}
+            >
+              {active.length}
+            </span>
+          )}
         </div>
-        <Link to="/anomalies" className="active-anomalies-view-all">
-          View All Anomalies →
-        </Link>
+        <Link to="/anomalies" className="card-link">View all anomalies</Link>
       </div>
 
       {loading ? (
-        <div className="active-anomalies-empty">
-          <span>Loading anomaly telemetry…</span>
+        <div className="anomaly-alert-panel--empty">
+          <span style={{ color: "var(--color-text-muted)" }}>Loading anomaly data…</span>
         </div>
       ) : active.length === 0 ? (
-        <div className="active-anomalies-empty">
-          <CheckCircle size={17} style={{ color: "#16a34a", flexShrink: 0 }} />
-          <span>No active anomalies detected. All fleet sensor nodes are operating within normal nominal ranges.</span>
+        <div className="anomaly-alert-panel--empty">
+          <CheckCircle size={16} style={{ color: "var(--color-green)", flexShrink: 0 }} />
+          <span>No active anomalies detected. All stations operating normally.</span>
         </div>
       ) : (
-        <div className="active-anomalies-list" role="list" aria-label="Active anomaly alerts">
+        <div className="anomaly-alert-panel" role="list" aria-label="Active anomaly alerts">
           {active.map((a) => (
             <AnomalyAlertRow key={a._id} anomaly={a} />
           ))}

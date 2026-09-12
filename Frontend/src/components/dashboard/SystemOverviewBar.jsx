@@ -1,120 +1,28 @@
-import { useRealtimeReadings, useRealtimeAnomalies, useRealtimeReadingCount } from "../../hooks/useRealtimeData";
+import { useRealtimeReadings, useRealtimeAnomalies } from "../../hooks/useRealtimeData";
 import { useAnomalies } from "../../hooks/useAnomalies";
-import { Radio, Database, AlertTriangle, Thermometer, Droplets, Gauge } from "lucide-react";
+import { useHealth } from "../../hooks/useHealth";
+import { Activity, AlertTriangle, ShieldCheck, Thermometer, Droplets, Gauge } from "lucide-react";
 
-const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 function isOnline(reading) {
   if (!reading?.timestamp) return false;
   return Date.now() - new Date(reading.timestamp).getTime() < ONLINE_THRESHOLD_MS;
 }
 
-// Inline SVGs for Sparklines matching reference image
-function SparklineWave({ color, id }) {
+function StatItem({ label, value, variant, sub, unit, icon: Icon }) {
+  const valueClass = variant ? `stat-item-value stat-item-value--${variant}` : "stat-item-value";
   return (
-    <svg width="56" height="24" viewBox="0 0 56 24" fill="none" className="overview-kpi-sparkline-svg">
-      <path
-        d="M0 16C12 16 16 8 28 14C40 20 44 6 56 8"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M0 16C12 16 16 8 28 14C40 20 44 6 56 8V24H0Z"
-        fill={`url(#${id})`}
-        opacity="0.18"
-      />
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="24" gradientUnits="userSpaceOnUse">
-          <stop stopColor={color} />
-          <stop offset="1" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function SparklineBars({ heights = [10, 14, 18, 20, 22], isPulsing = false }) {
-  const xCoords = [2, 11, 20, 29, 38];
-  const fills = ["#6ee7b7", "#34d399", "#10b981", "#10b981", isPulsing ? "#059669" : "#047857"];
-
-  return (
-    <svg width="44" height="24" viewBox="0 0 44 24" fill="none" className={`overview-kpi-sparkline-svg ${isPulsing ? "is-pulsing" : ""}`}>
-      {heights.map((h, i) => {
-        const height = Math.max(4, Math.min(22, h));
-        const y = 24 - height;
-        return (
-          <rect
-            key={i}
-            x={xCoords[i]}
-            y={y}
-            width="5.5"
-            height={height}
-            rx="1.5"
-            fill={fills[i]}
-            style={{ transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)" }}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-function SparklineCurve({ color, id }) {
-  return (
-    <svg width="56" height="24" viewBox="0 0 56 24" fill="none" className="overview-kpi-sparkline-svg">
-      <path
-        d="M0 16C12 16 16 9 28 14C40 19 44 10 56 11"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M0 16C12 16 16 9 28 14C40 19 44 10 56 11V24H0Z"
-        fill={`url(#${id})`}
-        opacity="0.18"
-      />
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="24" gradientUnits="userSpaceOnUse">
-          <stop stopColor={color} />
-          <stop offset="1" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function StatBox({ icon: Icon, title, value, unit, change, changeType, sub, theme, sparkline, isPulsing = false, liveDot = false }) {
-  return (
-    <div className={`overview-stat-box overview-stat-box--${theme}`}>
-      <div className="overview-stat-top">
-        <div className={`overview-stat-icon-wrap overview-stat-icon-wrap--${theme}`}>
-          <Icon size={16} strokeWidth={2.2} />
-        </div>
-        <span className="overview-stat-title">{title}</span>
+    <div className="stat-item">
+      <div className="stat-item-top">
+        <span className="stat-item-icon">{Icon ? <Icon size={16} strokeWidth={1.8} /> : <Activity size={16} />}</span>
+        <span className="stat-item-label">{label}</span>
       </div>
-
-      <div className="overview-stat-middle">
-        <div className="overview-stat-val-group">
-          <span className={`overview-stat-value ${isPulsing ? "overview-stat-value--pulsing" : ""}`}>{value}</span>
-          {unit && <span className="overview-stat-unit">{unit}</span>}
-          {change && (
-            <span className={`overview-stat-change overview-stat-change--${changeType}`}>
-              {change}
-            </span>
-          )}
-        </div>
-        <div className="overview-stat-sparkline-wrap">
-          {sparkline}
-        </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+        <span className={valueClass}>{value ?? "—"}</span>
+        {unit && <span style={{ fontSize: "11px", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>{unit}</span>}
       </div>
-
-      <div className="overview-stat-bottom">
-        <span className="overview-stat-sub">
-          {liveDot && <span className="overview-live-dot" />}
-          {sub}
-        </span>
-      </div>
+      {sub && <span className="stat-item-sub">{sub}</span>}
     </div>
   );
 }
@@ -123,18 +31,15 @@ export function SystemOverviewBar() {
   const { data: readings, loading: rLoading } = useRealtimeReadings();
   const { data: baseAnomalies, loading: aLoading } = useAnomalies();
   const anomalies = useRealtimeAnomalies(baseAnomalies);
-  const {
-    count: activeReadingsCount,
-    loading: countLoading,
-    isPulsing: countPulsing,
-    readingsInLastMinute,
-    barHeights,
-  } = useRealtimeReadingCount();
+  const { data: health } = useHealth();
 
-  const totalStations = readings.length || 3;
-  const onlineStations = readings.filter(isOnline).length || (readings.length > 0 ? readings.length : 3);
+  const totalStations = readings.length;
+  const onlineStations = readings.filter(isOnline).length;
 
   const activeAnomalies = anomalies.filter((a) => a.status === "pending").length;
+  const criticalAnomalies = anomalies.filter(
+    (a) => a.status === "pending" && a.severity === "critical"
+  ).length;
 
   // Calculate fleet averages
   const validTemps = readings.map((r) => r.temperature).filter((v) => typeof v === "number");
@@ -143,99 +48,77 @@ export function SystemOverviewBar() {
 
   const avgTemp = validTemps.length
     ? (validTemps.reduce((acc, v) => acc + v, 0) / validTemps.length).toFixed(1)
-    : "26.9";
+    : "—";
 
   const avgHum = validHumidity.length
     ? (validHumidity.reduce((acc, v) => acc + v, 0) / validHumidity.length).toFixed(0)
-    : "65";
+    : "—";
 
   const avgPress = validPressure.length
     ? (validPressure.reduce((acc, v) => acc + v, 0) / validPressure.length).toFixed(0)
-    : "1008";
+    : "—";
 
-  // Dynamic anomaly rate calculation
-  const anomalyDenominator = Math.max(1, activeReadingsCount || 100);
-  const anomalyRate = activeAnomalies > 0
-    ? Math.min(100, Math.round((activeAnomalies / anomalyDenominator) * 100))
-    : 0;
+  // Health index: % of online stations without active anomaly
+  const anomalyStationIds = new Set(
+    anomalies.filter((a) => a.status === "pending").map((a) => a.stationId)
+  );
+  const normalStations = readings.filter(
+    (r) => isOnline(r) && !anomalyStationIds.has(r.stationId)
+  ).length;
+
+  const fleetHealthPct = totalStations > 0
+    ? Math.round((normalStations / totalStations) * 100)
+    : 100;
+
+  const loading = rLoading || aLoading;
 
   return (
-    <div className="overview-stats-grid" aria-label="System overview statistics">
-      {/* 1. Plant Stations */}
-      <StatBox
-        icon={Radio}
-        title="Plant Stations"
-        value={`${onlineStations} / ${totalStations}`}
-        change="↑ 0%"
-        changeType="up"
-        sub="Online"
-        theme="blue"
-        sparkline={<SparklineWave color="#0284c7" id="spark-plant" />}
+    <div
+      className="stat-bar"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}
+      aria-label="System overview telemetry statistics"
+    >
+      <StatItem
+        label="Fleet Stations"
+        icon={Activity}
+        value={loading ? "—" : `${onlineStations}/${totalStations}`}
+        variant={onlineStations > 0 ? "green" : "muted"}
+        sub={totalStations > 0 ? "Reporting online" : "Connecting..."}
       />
-
-      {/* 2. Active Readings (Live Dynamic) */}
-      <StatBox
-        icon={Database}
-        title="Active Readings"
-        value={countLoading && activeReadingsCount === 0 ? "..." : activeReadingsCount.toLocaleString()}
-        change={readingsInLastMinute > 0 ? `↑ ${readingsInLastMinute}/min` : "↑ Live"}
-        changeType="up"
-        sub={readingsInLastMinute > 0 ? "Live ingestion active" : "All systems stable"}
-        theme="green"
-        liveDot={readingsInLastMinute > 0}
-        isPulsing={countPulsing}
-        sparkline={<SparklineBars heights={barHeights} isPulsing={countPulsing} />}
-      />
-
-      {/* 3. Anomaly Rate */}
-      <StatBox
+      <StatItem
+        label="Active Anomalies"
         icon={AlertTriangle}
-        title="Anomaly Rate"
-        value={`${anomalyRate}%`}
-        change="↓ 100%"
-        changeType="down"
-        sub="Within normal range"
-        theme="red"
-        sparkline={<SparklineWave color="#ef4444" id="spark-anomaly" />}
+        value={loading ? "—" : activeAnomalies}
+        variant={activeAnomalies > 0 ? (criticalAnomalies > 0 ? "red" : "amber") : "green"}
+        sub={criticalAnomalies > 0 ? `${criticalAnomalies} Critical alert` : "All stations stable"}
       />
-
-      {/* 4. Avg Temperature */}
-      <StatBox
+      <StatItem
+        label="Fleet Health"
+        icon={ShieldCheck}
+        value={loading ? "—" : `${fleetHealthPct}%`}
+        variant={fleetHealthPct > 80 ? "green" : fleetHealthPct > 50 ? "amber" : "red"}
+        sub="Station integrity"
+      />
+      <StatItem
+        label="Avg Temperature"
         icon={Thermometer}
-        title="Avg Temperature"
-        value={avgTemp}
+        value={loading ? "—" : avgTemp}
         unit="°C"
-        change="↑ 0.5%"
-        changeType="up"
         sub="Across active fleet"
-        theme="purple"
-        sparkline={<SparklineCurve color="#8b5cf6" id="spark-temp" />}
       />
-
-      {/* 5. Avg Humidity */}
-      <StatBox
+      <StatItem
+        label="Avg Humidity"
         icon={Droplets}
-        title="Avg Humidity"
-        value={avgHum}
-        unit="%"
-        change="↓ 1.2%"
-        changeType="down"
-        sub="Across active fleet"
-        theme="cyan"
-        sparkline={<SparklineWave color="#2563eb" id="spark-hum" />}
+        value={loading ? "—" : avgHum}
+        unit="% RH"
+        sub="Fleet-wide mean"
       />
-
-      {/* 6. Avg Pressure */}
-      <StatBox
+      <StatItem
+        label="Avg Pressure"
         icon={Gauge}
-        title="Avg Pressure"
-        value={avgPress}
+        value={loading ? "—" : avgPress}
         unit="hPa"
-        change="↑ 0.3%"
-        changeType="up"
-        sub="Across active fleet"
-        theme="amber"
-        sparkline={<SparklineCurve color="#d97706" id="spark-press" />}
+        sub="Barometric average"
       />
     </div>
   );
