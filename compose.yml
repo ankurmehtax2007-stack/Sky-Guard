@@ -1,10 +1,22 @@
 services:
 
+  mongodb:
+    image: mongo:7.0
+    container_name: sih-mongodb-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - sih-network
+
   mqtt-broker:
     image: eclipse-mosquitto:2
     container_name: mqtt-broker
     ports:
       - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     networks:
       - sih-network
 
@@ -29,7 +41,10 @@ services:
     environment:
       ML_SERVICE_URL: http://ml-service1:8000
       MQTT_BROKER: mqtt-broker
+      MQTT_PORT: 1883
+      MONGODB_URI: mongodb://mongodb:27017/skyguard
     depends_on:
+      - mongodb
       - mqtt-broker
       - ml-service1
     networks:
@@ -42,6 +57,7 @@ services:
       - ./simulator/.env
     environment:
       MQTT_BROKER: mqtt-broker
+      MQTT_PORT: 1883
     depends_on:
       - mqtt-broker
     networks:
@@ -72,3 +88,6 @@ services:
 networks:
   sih-network:
     driver: bridge
+
+volumes:
+  mongo-data:

@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     getLatestReadings,
     getStationReadings,
+    getTotalReadingsCount,
 } from "./reading.controller.js";
 import { authenticateUser, authorize } from "../../auth/auth.middleware.js";
 import { authorizeStationAccess } from "../../middlewares/stationAuth.middleware.js";
@@ -10,6 +11,11 @@ import { PERMISSIONS } from "../../auth/rbac/permissions.js";
 const readingRoutes = Router();
 
 readingRoutes.route("/").get(authenticateUser, authorize(PERMISSIONS.SENSORS_READ), getLatestReadings);
+readingRoutes.route("/stats/count").get(
+    authenticateUser,
+    authorize(PERMISSIONS.SENSORS_READ),
+    getTotalReadingsCount
+);
 readingRoutes.route("/:stationId").get(
     authenticateUser,
     authorize(PERMISSIONS.SENSORS_READ),
