@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import config from "../config/config.js";
 import { findUserById } from "./user.repository.js";
 import { getPermissionsForRole } from "./rbac/permissions.js";
+import { authorizeStationAccess } from "../middlewares/stationAuth.middleware.js";
 
 export const authenticateUser = async (req, res, next) => {
     const authHeader = req.headers["authorization"];
@@ -36,6 +37,8 @@ export const authenticateUser = async (req, res, next) => {
                 username: decoded.username || "operator",
                 email: decoded.email || "user@skyguard.ai",
                 role: decoded.role,
+                status: decoded.status || (decoded.role === "admin" ? "ACTIVE" : "PENDING"),
+                stationId: decoded.stationId !== undefined ? decoded.stationId : null,
             };
         }
 
@@ -44,6 +47,12 @@ export const authenticateUser = async (req, res, next) => {
                 message: "User not found"
             });
         }
+
+        // Standardize status and stationId defaults
+        const userRole = (user.role || "").toLowerCase();
+        user.role = userRole;
+        user.status = user.status || (userRole === "admin" ? "ACTIVE" : "PENDING");
+        user.stationId = user.stationId || null;
 
         // Attach user and computed permissions
         req.user = user;
@@ -95,10 +104,16 @@ export const optionalAuthenticateUser = async (req, res, next) => {
                 username: decoded.username || "operator",
                 email: decoded.email || "user@skyguard.ai",
                 role: decoded.role,
+                status: decoded.status || (decoded.role === "admin" ? "ACTIVE" : "PENDING"),
+                stationId: decoded.stationId !== undefined ? decoded.stationId : null,
             };
         }
 
         if (user) {
+            const userRole = (user.role || "").toLowerCase();
+            user.role = userRole;
+            user.status = user.status || (userRole === "admin" ? "ACTIVE" : "PENDING");
+            user.stationId = user.stationId || null;
             req.user = user;
             req.user.permissions = getPermissionsForRole(user.role);
         }
@@ -107,6 +122,8 @@ export const optionalAuthenticateUser = async (req, res, next) => {
     }
     next();
 };
+
+export { authorizeStationAccess };
 
 /**
  * Reusable RBAC Permission Authorization Middleware

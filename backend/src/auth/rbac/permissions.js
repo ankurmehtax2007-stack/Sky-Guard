@@ -21,6 +21,7 @@ export const PERMISSIONS = Object.freeze({
   STATIONS_CREATE: "stations:create",
   STATIONS_UPDATE: "stations:update",
   STATIONS_DELETE: "stations:delete",
+  STATIONS_ASSIGN: "stations:assign",
 
   // Telemetry History & Anomalies
   HISTORY_READ: "history:read",
@@ -42,6 +43,7 @@ export const PERMISSIONS = Object.freeze({
   USERS_UPDATE: "users:update",
   USERS_DELETE: "users:delete",
   ROLES_MANAGE: "roles:manage",
+  USERS_MANAGE_STATUS: "users:manage_status",
 
   // Diagnostics, Observability & System
   AUDIT_READ: "audit:read",
@@ -62,6 +64,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.STATIONS_CREATE,
     PERMISSIONS.STATIONS_UPDATE,
     PERMISSIONS.STATIONS_DELETE,
+    PERMISSIONS.STATIONS_ASSIGN,
     PERMISSIONS.HISTORY_READ,
     PERMISSIONS.ANOMALIES_READ,
     PERMISSIONS.ALERTS_READ,
@@ -75,6 +78,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.USERS_UPDATE,
     PERMISSIONS.USERS_DELETE,
     PERMISSIONS.ROLES_MANAGE,
+    PERMISSIONS.USERS_MANAGE_STATUS,
     PERMISSIONS.AUDIT_READ,
     PERMISSIONS.METRICS_READ,
     PERMISSIONS.SIMULATION_RUN,

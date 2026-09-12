@@ -72,6 +72,9 @@ const buildAnomalyFilter = (stationId, options = {}) => {
 };
 
 export const findAnomalies = async (stationId, options = {}) => {
+    if (mongoose.connection.readyState !== 1) {
+        return [];
+    }
     const filter = buildAnomalyFilter(stationId, options);
     try {
         const anomalies = await Anomaly.find(filter)
@@ -86,6 +89,9 @@ export const findAnomalies = async (stationId, options = {}) => {
 };
 
 export const countAnomalies = async (stationId, options = {}) => {
+    if (mongoose.connection.readyState !== 1) {
+        return 0;
+    }
     const filter = buildAnomalyFilter(stationId, options);
     try {
         const count = await Anomaly.countDocuments(filter);
@@ -97,6 +103,9 @@ export const countAnomalies = async (stationId, options = {}) => {
 };
 
 export const findAnomalyById = async (anomalyId) => {
+    if (mongoose.connection.readyState !== 1) {
+        return null;
+    }
     try {
         if (!mongoose.Types.ObjectId.isValid(anomalyId)) {
             return null;

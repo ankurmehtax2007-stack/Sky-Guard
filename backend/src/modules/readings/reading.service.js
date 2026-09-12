@@ -218,8 +218,8 @@ export const retryPendingML = async () => {
     }
 };
 
-export const fetchLatestReadings = async () => {
-    const readings = await findLatestReadings();
+export const fetchLatestReadings = async (stationId = null) => {
+    const readings = await findLatestReadings(stationId);
     return readings;
 };
 

@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import config from "../config/config.js";
-import { loginService, logoutService, registerService, refreshSessionService } from "./auth.service.js";
+import { loginService, logoutService, registerService, refreshSessionService, getAllUsersService, getUserByIdService, deleteUserService, createUserService, updateUserService } from "./auth.service.js";
 import {
     findAllUsers,
     findUserById,
@@ -9,8 +9,10 @@ import {
     updateUserById,
     deleteUserById,
     createUser,
+    assignUserStation,
+    updateUserStatus,
 } from "./user.repository.js";
-import { isValidRole, hasPermission, PERMISSIONS } from "./rbac/permissions.js";
+import { stationExists } from "../modules/stations/station.repository.js";
 import logger from "../utils/logger.js";
 
 export const getMe = async (req, res) => {
@@ -20,10 +22,12 @@ export const getMe = async (req, res) => {
         }
         res.status(200).json({
             user: {
-                id: req.user._id,
+                id: req.user._id || req.user.id,
                 username: req.user.username,
                 email: req.user.email,
                 role: req.user.role,
+                status: req.user.status,
+                stationId: req.user.stationId,
             },
         });
     } catch (error) {
@@ -122,31 +126,29 @@ export const logoutUser = async (req , res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        let users = [];
-        if (mongoose.connection.readyState === 1) {
-            users = await findAllUsers();
-        } else {
-            users = [
-                { _id: "admin_1", username: "admin", email: "admin@skyguard.ai", role: "admin" }
-            ];
-        }
-        res.status(200).json(users);
+        const users = await getAllUsersService({
+            status: req.query.status,
+            stationId: req.query.stationId,
+            role: req.query.role
+        });
+
+        return res.status(200).json(users);
     } catch (error) {
         logger.error({ error }, "Error in fetching users");
-        res.status(500).json({ message: "Internal server error" });
+
+        return res.status(500).json({
+            message: "Internal server error"
+        });
     }
 };
 
 export const getUserById = async (req, res) => {
     try {
-        const user = await findUserById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+        const user = await getUserByIdService(req.params.id);
         res.status(200).json(user);
     } catch (error) {
         logger.error({ error }, "Error in fetching user");
-        res.status(500).json({ message: "Internal server error5" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error5" });
     }
 };
 
@@ -154,39 +156,142 @@ export const updateUser = async (req, res) => {
     try {
         const targetUserId = req.params.id;
         const updates = { ...req.body };
+        const callerRole = (req.user?.role || "").toLowerCase();
 
-        // If attempting to update role, verify permissions and validate role
-        if (updates.role !== undefined) {
-            const callerRole = (req.user?.role || "").toLowerCase();
-            const canManageRoles = hasPermission(callerRole, PERMISSIONS.ROLES_MANAGE);
-
-            if (!canManageRoles) {
-                return res.status(403).json({
-                    message: "Forbidden: Only administrators can assign or modify user roles",
-                });
-            }
-
-            if (!isValidRole(updates.role)) {
-                return res.status(400).json({
-                    message: "Invalid role. Allowed roles are: admin, engineer, operator, viewer",
-                });
-            }
-
-            updates.role = updates.role.toLowerCase().trim();
-        }
-
-        // If updating password, hash it
-        if (updates.password) {
-            updates.password = await bcrypt.hash(updates.password, 10);
-        }
-
-        const updatedUser = await updateUserById(targetUserId, updates);
-        if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
+        const updatedUser = await updateUserService(targetUserId, updates, callerRole);
         res.status(200).json(updatedUser);
     } catch (error) {
         logger.error({ error }, "Error in updating user");
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const assignStationController = async (req, res) => {
+    try {
+        const callerRole = (req.user?.role || "").toLowerCase();
+        if (callerRole !== "admin") {
+            return res.status(403).json({
+                message: "Forbidden: Only administrators can assign stations to users",
+            });
+        }
+
+        const targetUserId = req.params.userId || req.params.id;
+        const { stationId } = req.body;
+
+        if (!stationId) {
+            return res.status(400).json({ message: "stationId is required" });
+        }
+
+        const cleanStationId = String(stationId).trim();
+
+        // 1. Verify target user exists
+        let targetUser = null;
+        if (mongoose.connection.readyState === 1) {
+            targetUser = await findUserById(targetUserId);
+        } else {
+            targetUser = {
+                _id: targetUserId,
+                username: "operator_mock",
+                email: "operator@skyguard.ai",
+                role: "operator",
+                status: "PENDING",
+                stationId: null,
+            };
+        }
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 2. Verify station exists
+        const exists = await stationExists(cleanStationId);
+        if (!exists) {
+            return res.status(404).json({ message: `Station ${cleanStationId} not found` });
+        }
+
+        // 3. Assign station and transition user status from PENDING to ACTIVE
+        let updatedUser = null;
+        if (mongoose.connection.readyState === 1) {
+            updatedUser = await assignUserStation(targetUserId, cleanStationId);
+        } else {
+            targetUser.stationId = cleanStationId;
+            targetUser.status = "ACTIVE";
+            updatedUser = targetUser;
+        }
+
+        res.status(200).json({
+            message: "Station assigned and user activated successfully",
+            user: {
+                id: updatedUser._id || updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                status: updatedUser.status,
+                stationId: updatedUser.stationId,
+            },
+        });
+    } catch (error) {
+        logger.error({ error }, "Error assigning station to user");
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const updateUserStatusController = async (req, res) => {
+    try {
+        const callerRole = (req.user?.role || "").toLowerCase();
+        if (callerRole !== "admin") {
+            return res.status(403).json({
+                message: "Forbidden: Only administrators can update user status",
+            });
+        }
+
+        const targetUserId = req.params.userId || req.params.id;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ message: "status is required" });
+        }
+
+        const normalizedStatus = String(status).toUpperCase().trim();
+        const validStatuses = ["PENDING", "ACTIVE", "SUSPENDED"];
+        if (!validStatuses.includes(normalizedStatus)) {
+            return res.status(400).json({
+                message: "Invalid status. Allowed values are: PENDING, ACTIVE, SUSPENDED",
+            });
+        }
+
+        let targetUser = null;
+        if (mongoose.connection.readyState === 1) {
+            targetUser = await findUserById(targetUserId);
+        } else {
+            targetUser = { _id: targetUserId, status: "PENDING" };
+        }
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        let updatedUser = null;
+        if (mongoose.connection.readyState === 1) {
+            updatedUser = await updateUserStatus(targetUserId, normalizedStatus);
+        } else {
+            targetUser.status = normalizedStatus;
+            updatedUser = targetUser;
+        }
+
+        res.status(200).json({
+            message: "User status updated successfully",
+            user: {
+                id: updatedUser._id || updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                status: updatedUser.status,
+                stationId: updatedUser.stationId,
+            },
+        });
+    } catch (error) {
+        logger.error({ error }, "Error updating user status");
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -195,40 +300,7 @@ export const updateUserRole = async (req, res) => {
     try {
         const { role } = req.body;
         const targetUserId = req.params.id;
-
-        if (!role) {
-            return res.status(400).json({ message: "Role is required" });
-        }
-
-        if (!isValidRole(role)) {
-            return res.status(400).json({
-                message: "Invalid role. Allowed roles are: admin, engineer, operator, viewer",
-            });
-        }
-
-        const callerRole = (req.user?.role || "").toLowerCase();
-        if (!hasPermission(callerRole, PERMISSIONS.ROLES_MANAGE)) {
-            return res.status(403).json({
-                message: "Forbidden: Only administrators can assign or modify user roles",
-            });
-        }
-
-        const normalizedRole = role.toLowerCase().trim();
-        let updatedUser = null;
-        if (mongoose.connection.readyState === 1) {
-            updatedUser = await updateUserById(targetUserId, { role: normalizedRole });
-        } else {
-            updatedUser = {
-                _id: targetUserId,
-                username: "test_operator",
-                email: "test@skyguard.ai",
-                role: normalizedRole,
-            };
-        }
-
-        if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
+        const updatedUser = await updateUserService(targetUserId, { role });
 
         res.status(200).json({
             message: "User role updated successfully",
@@ -242,31 +314,8 @@ export const updateUserRole = async (req, res) => {
 
 export const createUserByAdmin = async (req, res) => {
     try {
-        const { username, email, password, role = "viewer" } = req.body;
-
-        if (!username || !email || !password) {
-            return res.status(400).json({ message: "Username, email, and password are required" });
-        }
-
-        if (!isValidRole(role)) {
-            return res.status(400).json({
-                message: "Invalid role. Allowed roles are: admin, engineer, operator, viewer",
-            });
-        }
-
-        const existingUser = await findUserByEmail(email);
-        if (existingUser) {
-            return res.status(400).json({ message: "User already exists with this email" });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await createUser({
-            username,
-            email,
-            password: hashedPassword,
-            role: role.toLowerCase().trim(),
-        });
-
+        const { username, email, password, role = "viewer", stationId = null, status } = req.body;
+        const newUser = await createUserService(username, email, password, role, stationId, status);
         res.status(201).json({
             message: "User created successfully",
             user: {
@@ -274,6 +323,8 @@ export const createUserByAdmin = async (req, res) => {
                 username: newUser.username,
                 email: newUser.email,
                 role: newUser.role,
+                status: newUser.status,
+                stationId: newUser.stationId,
             },
         });
     } catch (error) {
@@ -284,20 +335,10 @@ export const createUserByAdmin = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
     try {
-        const targetUserId = req.params.id;
-
-        // Prevent admin from deleting their own account
-        if (req.user && req.user._id.toString() === targetUserId) {
-            return res.status(400).json({ message: "Cannot delete your own active account" });
-        }
-
-        const deletedUser = await deleteUserById(targetUserId);
-        if (!deletedUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
+        await deleteUserService({ user: req.user, userId: req.params.id });
         res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
         logger.error({ error }, "Error in deleting user");
-        res.status(500).json({ message: "Internal server error" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };

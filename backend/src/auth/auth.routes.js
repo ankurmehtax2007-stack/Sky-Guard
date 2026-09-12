@@ -11,6 +11,8 @@ import {
     logoutUser,
     getMe,
     refreshTokenController,
+    assignStationController,
+    updateUserStatusController,
 } from "./auth.controller.js";
 import { authenticateUser, authorize } from "./auth.middleware.js";
 import { PERMISSIONS } from "./rbac/permissions.js";
@@ -33,6 +35,8 @@ authRoutes.post("/users", authenticateUser, authorize(PERMISSIONS.USERS_CREATE),
 authRoutes.get("/:id", authenticateUser, authorize(PERMISSIONS.USERS_READ), getUserById);
 authRoutes.put("/:id", authenticateUser, authorize(PERMISSIONS.USERS_UPDATE), updateUser);
 authRoutes.patch("/:id/role", authenticateUser, authorize(PERMISSIONS.ROLES_MANAGE), updateUserRole);
+authRoutes.patch("/:id/station", authenticateUser, authorize(PERMISSIONS.STATIONS_ASSIGN), assignStationController);
+authRoutes.patch("/:id/status", authenticateUser, authorize(PERMISSIONS.USERS_MANAGE_STATUS), updateUserStatusController);
 authRoutes.delete("/:id", authenticateUser, authorize(PERMISSIONS.USERS_DELETE), deleteUser);
 
 export default authRoutes;

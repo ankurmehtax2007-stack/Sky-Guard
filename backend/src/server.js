@@ -7,11 +7,13 @@ import config from "./config/config.js";
 import { initializeWebSocket } from "./websocket/websocket.server.js";
 import { startMLRetryWorker, stopMLRetryWorker } from "./modules/worker/mlRetry.worker.js";
 import { startAnomalyRetryWorker, stopAnomalyRetryWorker } from "./modules/worker/anomalyRetry.worker.js";
+import { initStationSeed } from "./modules/stations/station.repository.js";
 import logger from "./utils/logger.js";
 
 const startServer = async () => {
     try {
         await connectDB(); 
+        await initStationSeed();
         connectMQTT();
         logger.info("Backend started successfully");
     } catch (error) {
