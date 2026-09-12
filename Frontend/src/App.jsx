@@ -10,7 +10,6 @@ const Login = lazy(() => import("./pages/Login"));
 const IndiaMapPage = lazy(() => import("./pages/IndiaMapPage"));
 const Users = lazy(() => import("./pages/Users"));
 const Health = lazy(() => import("./pages/Health"));
-const Insights = lazy(() => import("./pages/Insights"));
 const SystemControl = lazy(() => import("./pages/SystemControl"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -38,7 +37,6 @@ export default function App() {
           <Route path="/lithos" element={<IndiaMapPage />} />
           <Route path="/anomalies" element={<Anomalies />} />
           <Route path="/anomalies/:anomalyId" element={<AnomalyDetail />} />
-          <Route path="/insights" element={<Insights />} />
           <Route path="/health" element={<Health />} />
           <Route path="/system" element={<SystemControl />} />
           <Route path="/users" element={<Users />} />

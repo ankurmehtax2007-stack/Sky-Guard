@@ -7,7 +7,6 @@ import {
   HeartPulse,
   ShieldCheck,
   MapPin,
-  BrainCircuit,
   Server,
 } from "lucide-react";
 import { useHealth } from "../../hooks/useHealth";
@@ -30,7 +29,6 @@ const NAV_SECTIONS = [
   {
     label: "Intelligence & Analysis",
     items: [
-      { to: "/insights", icon: BrainCircuit, label: "XAI & LLM Insights" },
       { to: "/health",   icon: HeartPulse,   label: "Sensor Health Index" },
     ],
   },
