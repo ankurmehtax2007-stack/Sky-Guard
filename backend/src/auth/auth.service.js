@@ -1,9 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import { findUserByEmail, createUser, findUserById, deleteUserById, updateUserById } from "./user.repository.js";
+import { findUserByEmail, createUser, findUserById, deleteUserById, updateUserById, assignUserStation } from "./user.repository.js";
 import { createSession, saveSession, findSessionById } from "./session.repository.js";
-import { isValidRole, hasPermission, PERMISSIONS } from "./rbac/permissions.js";
+import { isValidRole } from "./rbac/permissions.js";
+import { stationExists } from "../modules/stations/station.repository.js";
 
 export const loginService = async (email, password, userAgent, ip) => {
     const user = await findUserByEmail(email);
@@ -317,17 +318,17 @@ export const createUserService = async (username, email, password, role = "viewe
 export const updateUserService = async (id, updates, callerRole) => {
     if (updates.role !== undefined || updates.status !== undefined || updates.stationId !== undefined) {
             if (callerRole !== "admin") {
-                return res.status(403).json({
-                    message: "Forbidden: Only administrators can modify roles, statuses, or station assignments",
-                });
+                const err = new Error("Forbidden: Only administrators can modify roles, statuses, or station assignments");
+                err.status = 403;
+                throw err;
             }
         }
 
         if (updates.role !== undefined) {
             if (!isValidRole(updates.role)) {
-                return res.status(400).json({
-                    message: "Invalid role. Allowed roles are: admin, engineer, operator, viewer",
-                });
+                const err = new Error("Invalid role. Allowed roles are: admin, engineer, operator, viewer");
+                err.status = 400;
+                throw err;
             }
             updates.role = updates.role.toLowerCase().trim();
         }
@@ -335,9 +336,9 @@ export const updateUserService = async (id, updates, callerRole) => {
         if (updates.status !== undefined) {
             const normalizedStatus = String(updates.status).toUpperCase().trim();
             if (!["PENDING", "ACTIVE", "SUSPENDED"].includes(normalizedStatus)) {
-                return res.status(400).json({
-                    message: "Invalid status. Allowed values are: PENDING, ACTIVE, SUSPENDED",
-                });
+                const err = new Error("Invalid status. Allowed values are: PENDING, ACTIVE, SUSPENDED");
+                err.status = 400;
+                throw err;
             }
             updates.status = normalizedStatus;
         }
@@ -346,7 +347,9 @@ export const updateUserService = async (id, updates, callerRole) => {
             const cleanStationId = String(updates.stationId).trim();
             const exists = await stationExists(cleanStationId);
             if (!exists) {
-                return res.status(404).json({ message: `Station ${cleanStationId} not found` });
+                const err = new Error(`Station ${cleanStationId} not found`);
+                err.status = 404;
+                throw err;
             }
             updates.stationId = cleanStationId;
         }
@@ -358,7 +361,9 @@ export const updateUserService = async (id, updates, callerRole) => {
 
         const updatedUser = await updateUserById(id, updates);
         if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
+            const err = new Error("User not found");
+            err.status = 404;
+            throw err;
         }
         
         return updatedUser;
@@ -366,13 +371,15 @@ export const updateUserService = async (id, updates, callerRole) => {
 
 export const updateUserRoleService = async (id, role) => {
         if (!role) {
-            return res.status(400).json({ message: "Role is required" });
+            const err = new Error("Role is required");
+            err.status = 400;
+            throw err;
         }
 
         if (!isValidRole(role)) {
-            return res.status(400).json({
-                message: "Invalid role. Allowed roles are: admin, engineer, operator, viewer",
-            });
+            const err = new Error("Invalid role. Allowed roles are: admin, engineer, operator, viewer");
+            err.status = 400;
+            throw err;
         }
 
         const normalizedRole = role.toLowerCase().trim();
@@ -389,8 +396,111 @@ export const updateUserRoleService = async (id, role) => {
         }
 
         if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
+            const err = new Error("User not found");
+            err.status = 404;
+            throw err;
         }
         
         return updatedUser;
-    };
+};
+
+export const updateUserStatusService = async (id, status, callerRole) => {
+        if (callerRole !== "admin") {
+            const err = new Error("Forbidden: Only administrators can update user status");
+            err.status = 403;
+            throw err;
+        }
+
+        if (!status) {
+            const err = new Error("status is required");
+            err.status = 400;
+            throw err;
+        }
+
+        const normalizedStatus = String(status).toUpperCase().trim();
+        const validStatuses = ["PENDING", "ACTIVE", "SUSPENDED"];
+        if (!validStatuses.includes(normalizedStatus)) {
+            const err = new Error("Invalid status. Allowed values are: PENDING, ACTIVE, SUSPENDED");
+            err.status = 400;
+            throw err;
+        }
+
+        let targetUser = null;
+        if (mongoose.connection.readyState === 1) {
+            targetUser = await findUserById(id);
+        } else {
+            targetUser = { _id: id, status: "PENDING" };
+        }
+
+        if (!targetUser) {
+            const err = new Error("User not found");
+            err.status = 404;
+            throw err;
+        }
+
+        let updatedUser = null;
+        if (mongoose.connection.readyState === 1) {
+            updatedUser = await updateUserStatus(id, normalizedStatus);
+        } else {
+            targetUser.status = normalizedStatus;
+            updatedUser = targetUser;
+        }
+
+        return updatedUser;
+}
+
+export const assignStationService = async (id, stationId, callerRole) => {
+    if (callerRole !== "admin") {
+        const err = new Error("Forbidden: Only administrators can assign stations to users");
+        err.status = 403;
+        throw err;
+    }
+
+    if (!stationId) {
+        const err = new Error("stationId is required");
+        err.status = 400;
+        throw err;
+    }
+
+    const cleanStationId = String(stationId).trim();
+
+    // 1. Verify target user exists
+    let targetUser = null;
+    if (mongoose.connection.readyState === 1) {
+        targetUser = await findUserById(id);
+    } else {
+        targetUser = {
+            _id: id,
+            username: "operator_mock",
+            email: "operator@skyguard.ai",
+            role: "operator",
+            status: "PENDING",
+            stationId: null,
+        };
+    }
+
+    if (!targetUser) {
+        const err = new Error("User not found");
+        err.status = 404;
+        throw err;
+    }
+
+    // 2. Verify station exists
+    const exists = await stationExists(cleanStationId);
+    if (!exists) {
+        const err = new Error(`Station ${cleanStationId} not found`);
+        err.status = 404;
+        throw err;
+    }
+
+    // 3. Assign station and transition user status from PENDING to ACTIVE
+    let updatedUser = null;
+    if (mongoose.connection.readyState === 1) {
+        updatedUser = await assignUserStation(id, cleanStationId);
+    } else {
+        targetUser.stationId = cleanStationId;
+        targetUser.status = "ACTIVE";
+        updatedUser = targetUser;
+    }
+    return updatedUser;
+}

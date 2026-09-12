@@ -1,18 +1,5 @@
-import bcrypt from "bcrypt";
-import mongoose from "mongoose";
 import config from "../config/config.js";
-import { loginService, logoutService, registerService, refreshSessionService, getAllUsersService, getUserByIdService, deleteUserService, createUserService, updateUserService } from "./auth.service.js";
-import {
-    findAllUsers,
-    findUserById,
-    findUserByEmail,
-    updateUserById,
-    deleteUserById,
-    createUser,
-    assignUserStation,
-    updateUserStatus,
-} from "./user.repository.js";
-import { stationExists } from "../modules/stations/station.repository.js";
+import { loginService, logoutService, registerService, refreshSessionService, getAllUsersService, getUserByIdService, deleteUserService, createUserService, updateUserService, updateUserStatusService } from "./auth.service.js";
 import logger from "../utils/logger.js";
 
 export const getMe = async (req, res) => {
@@ -169,55 +156,10 @@ export const updateUser = async (req, res) => {
 export const assignStationController = async (req, res) => {
     try {
         const callerRole = (req.user?.role || "").toLowerCase();
-        if (callerRole !== "admin") {
-            return res.status(403).json({
-                message: "Forbidden: Only administrators can assign stations to users",
-            });
-        }
-
         const targetUserId = req.params.userId || req.params.id;
         const { stationId } = req.body;
 
-        if (!stationId) {
-            return res.status(400).json({ message: "stationId is required" });
-        }
-
-        const cleanStationId = String(stationId).trim();
-
-        // 1. Verify target user exists
-        let targetUser = null;
-        if (mongoose.connection.readyState === 1) {
-            targetUser = await findUserById(targetUserId);
-        } else {
-            targetUser = {
-                _id: targetUserId,
-                username: "operator_mock",
-                email: "operator@skyguard.ai",
-                role: "operator",
-                status: "PENDING",
-                stationId: null,
-            };
-        }
-
-        if (!targetUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        // 2. Verify station exists
-        const exists = await stationExists(cleanStationId);
-        if (!exists) {
-            return res.status(404).json({ message: `Station ${cleanStationId} not found` });
-        }
-
-        // 3. Assign station and transition user status from PENDING to ACTIVE
-        let updatedUser = null;
-        if (mongoose.connection.readyState === 1) {
-            updatedUser = await assignUserStation(targetUserId, cleanStationId);
-        } else {
-            targetUser.stationId = cleanStationId;
-            targetUser.status = "ACTIVE";
-            updatedUser = targetUser;
-        }
+        const updatedUser = await assignStationService(targetUserId, stationId, callerRole);
 
         res.status(200).json({
             message: "Station assigned and user activated successfully",
@@ -239,45 +181,10 @@ export const assignStationController = async (req, res) => {
 export const updateUserStatusController = async (req, res) => {
     try {
         const callerRole = (req.user?.role || "").toLowerCase();
-        if (callerRole !== "admin") {
-            return res.status(403).json({
-                message: "Forbidden: Only administrators can update user status",
-            });
-        }
-
         const targetUserId = req.params.userId || req.params.id;
         const { status } = req.body;
 
-        if (!status) {
-            return res.status(400).json({ message: "status is required" });
-        }
-
-        const normalizedStatus = String(status).toUpperCase().trim();
-        const validStatuses = ["PENDING", "ACTIVE", "SUSPENDED"];
-        if (!validStatuses.includes(normalizedStatus)) {
-            return res.status(400).json({
-                message: "Invalid status. Allowed values are: PENDING, ACTIVE, SUSPENDED",
-            });
-        }
-
-        let targetUser = null;
-        if (mongoose.connection.readyState === 1) {
-            targetUser = await findUserById(targetUserId);
-        } else {
-            targetUser = { _id: targetUserId, status: "PENDING" };
-        }
-
-        if (!targetUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        let updatedUser = null;
-        if (mongoose.connection.readyState === 1) {
-            updatedUser = await updateUserStatus(targetUserId, normalizedStatus);
-        } else {
-            targetUser.status = normalizedStatus;
-            updatedUser = targetUser;
-        }
+        const updatedUser = await updateUserStatusService(targetUserId, status, callerRole);
 
         res.status(200).json({
             message: "User status updated successfully",
