@@ -5,30 +5,30 @@ from typing import Any
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+# Search and load .env from module hierarchy or working directory
+_cur = Path(__file__).resolve()
+for _dir in [_cur.parent, *_cur.parents, Path.cwd(), *Path.cwd().parents]:
+    _env_candidate = _dir / '.env'
+    if _env_candidate.is_file():
+        load_dotenv(_env_candidate)
 
 def _resolve_key() -> str:
+    """Resolve Mistral API key from environment or .env files."""
     key = os.getenv('MISTRAL_API_KEY', '').strip()
     if key:
         return key
     cur = Path(__file__).resolve()
     for parent in [cur.parent, *cur.parents, Path.cwd(), *Path.cwd().parents]:
         env_path = parent / '.env'
-        if env_path.exists() and env_path.is_file():
+        if env_path.is_file():
             try:
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith('MISTRAL_API_KEY='):
-                            val = line.split('=', 1)[1].strip().strip('"').strip("'")
-                            if val:
-                                os.environ['MISTRAL_API_KEY'] = val
-                                return val
+                load_dotenv(env_path, override=True)
+                key = os.getenv('MISTRAL_API_KEY', '').strip()
+                if key:
+                    return key
             except Exception:
                 pass
-    default_key = 'K53ATfhFHMqEfyX14hv7VF1LdHmjkqC5'
-    os.environ['MISTRAL_API_KEY'] = default_key
-    return default_key
+    return ''
 
 def get_ai_recommendations_for_improvements(root_cause: str, severity: str = 'NONE', health_score: Any = 100) -> list[str]:
     rc = str(root_cause or '').lower()

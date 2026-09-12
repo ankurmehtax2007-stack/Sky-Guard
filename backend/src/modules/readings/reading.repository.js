@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { SensorReading } from "./reading.model.js";
 import logger from "../../utils/logger.js";
 
@@ -12,9 +13,18 @@ export const saveReading = async (reading) => {
     }
 };
 
-export const findLatestReadings = async () => {
+export const findLatestReadings = async (stationId = null) => {
+    if (mongoose.connection.readyState !== 1) {
+        return [];
+    }
     try {
-        const readings = await SensorReading.aggregate([
+        const pipeline = [];
+        if (stationId) {
+            pipeline.push({
+                $match: { stationId: String(stationId).trim() }
+            });
+        }
+        pipeline.push(
             {
                 $sort: {
                     timestamp: -1
@@ -33,7 +43,8 @@ export const findLatestReadings = async () => {
                     newRoot: "$latestReading"
                 }
             }
-        ]);
+        );
+        const readings = await SensorReading.aggregate(pipeline);
         return readings;
     } catch (error) {
         logger.error({ error }, "Error fetching latest readings");
@@ -72,6 +83,9 @@ const buildReadingFilter = (stationId, options) => {
 };
 
 export const findReadingsByStation = async (stationId, options) => {
+    if (mongoose.connection.readyState !== 1) {
+        return [];
+    }
     try {
         const filter = buildReadingFilter(stationId, options);
         const readings = await SensorReading.find(filter)
@@ -86,6 +100,9 @@ export const findReadingsByStation = async (stationId, options) => {
 };
 
 export const countReadingsByStation = async (stationId , options) => {
+    if (mongoose.connection.readyState !== 1) {
+        return 0;
+    }
     try {
         const query = buildReadingFilter(stationId , options);
 

@@ -4,7 +4,36 @@ import { paginationSchema } from "./reading.validator.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 
 export const getLatestReadings = asyncHandler(async (req, res) => {
-    const readings = await fetchLatestReadings();
+    const userRole = (req.user?.role || "").toLowerCase();
+    const userStatus = (req.user?.status || "PENDING").toUpperCase();
+
+    let targetStationId = null;
+
+    if (userRole === "admin") {
+        targetStationId = req.query.stationId ? String(req.query.stationId).trim() : null;
+    } else {
+        if (userStatus === "PENDING") {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: Account is pending station assignment by an administrator",
+            });
+        }
+        if (userStatus === "SUSPENDED") {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: Account is suspended",
+            });
+        }
+        if (!req.user?.stationId) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: No station assigned to this account",
+            });
+        }
+        targetStationId = req.user.stationId;
+    }
+
+    const readings = await fetchLatestReadings(targetStationId);
     res.status(200).json({
         success: true,
         message: "Latest readings fetched successfully",

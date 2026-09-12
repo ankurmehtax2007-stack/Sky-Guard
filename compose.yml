@@ -26,6 +26,8 @@ services:
     container_name: sih-ml-service1-container
     ports:
       - "8000:8000"
+    env_file:
+      - ./ml-service1/.env
     networks:
       - sih-network
 

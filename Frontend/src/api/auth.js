@@ -3,6 +3,14 @@ import api from "./axios";
 // Register
 export const registerUser = async (userData) => {
   const response = await api.post("/api/auth/register", userData);
+
+  if (response.data.accessToken) {
+    localStorage.setItem("accessToken", response.data.accessToken);
+  }
+  if (response.data.user) {
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+  }
+
   return response.data;
 };
 
@@ -13,16 +21,39 @@ export const loginUser = async (credentials) => {
   if (response.data.accessToken) {
     localStorage.setItem("accessToken", response.data.accessToken);
   }
+  if (response.data.user) {
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+  }
 
   return response.data;
 };
 
 // Logout
 export const logoutUser = async () => {
-  const response = await api.post("/api/auth/logout");
+  try {
+    const response = await api.post("/api/auth/logout");
+    return response.data;
+  } finally {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+  }
+};
 
-  localStorage.removeItem("accessToken");
+// Get current user profile
+export const getMe = async () => {
+  const response = await api.get("/api/auth/me");
+  return response.data;
+};
 
+// Refresh access token via HTTP-only cookie
+export const refreshToken = async () => {
+  const response = await api.post("/api/auth/refresh");
+  if (response.data.accessToken) {
+    localStorage.setItem("accessToken", response.data.accessToken);
+  }
+  if (response.data.user) {
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+  }
   return response.data;
 };
 

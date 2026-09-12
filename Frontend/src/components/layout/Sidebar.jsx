@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
   Activity,
@@ -9,9 +9,11 @@ import {
   Layers,
   Users,
   ShieldCheck,
+  LogOut,
 } from "lucide-react";
 import { useHealth } from "../../hooks/useHealth";
 import { useAnomalies } from "../../hooks/useAnomalies";
+import { useAuth } from "../../context/AuthContext";
 
 const NAV_SECTIONS = [
   {
@@ -30,12 +32,26 @@ const NAV_SECTIONS = [
     isSystem: true,
     items: [
       { to: "/system", icon: Layers, label: "System & Simulator" },
-      { to: "/users",  icon: Users,  label: "Operators" },
+      { to: "/users",  icon: Users,  label: "Operators", badge: "Admin" },
     ],
   },
 ];
 
-function NavItem({ to, icon: Icon, label, hasBadge, badgeCount, onClick }) {
+const getRoleBadgeStyle = (role) => {
+  switch (role) {
+    case "admin":
+      return { bg: "rgba(239, 68, 68, 0.18)", text: "#f87171", border: "rgba(239, 68, 68, 0.35)" };
+    case "engineer":
+      return { bg: "rgba(168, 85, 247, 0.18)", text: "#c084fc", border: "rgba(168, 85, 247, 0.35)" };
+    case "operator":
+      return { bg: "rgba(14, 165, 233, 0.18)", text: "#38bdf8", border: "rgba(14, 165, 233, 0.35)" };
+    case "viewer":
+    default:
+      return { bg: "rgba(16, 185, 129, 0.18)", text: "#34d399", border: "rgba(16, 185, 129, 0.35)" };
+  }
+};
+
+function NavItem({ to, icon: Icon, label, hasBadge, badgeCount, badge, onClick }) {
   return (
     <NavLink
       to={to}
@@ -45,9 +61,29 @@ function NavItem({ to, icon: Icon, label, hasBadge, badgeCount, onClick }) {
       }
     >
       <Icon size={18} strokeWidth={1.85} className="sidebar-nav-icon" />
-      <span className="sidebar-nav-text">{label}</span>
+      <span className="sidebar-nav-text" style={{ flex: 1 }}>{label}</span>
       {hasBadge && (
         <span className="sidebar-badge">{badgeCount ?? 3}</span>
+      )}
+      {badge && !hasBadge && (
+        <span
+          style={{
+            fontSize: "9.5px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+            padding: "2px 6px",
+            borderRadius: "5px",
+            background: "rgba(239, 68, 68, 0.15)",
+            color: "#f87171",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            boxShadow: "0 0 6px rgba(239, 68, 68, 0.2)",
+            marginLeft: "auto",
+            flexShrink: 0,
+          }}
+        >
+          {badge}
+        </span>
       )}
     </NavLink>
   );
@@ -56,6 +92,8 @@ function NavItem({ to, icon: Icon, label, hasBadge, badgeCount, onClick }) {
 export function Sidebar({ isOpen, onClose }) {
   const { data: healthData } = useHealth();
   const { data: anomaliesData } = useAnomalies();
+  const { user, role, logout } = useAuth();
+  const navigate = useNavigate();
 
   const isHealthy = healthData?.status === "healthy";
   const statusKnown = healthData !== null;
@@ -69,6 +107,14 @@ export function Sidebar({ isOpen, onClose }) {
   const handleNavClick = () => {
     if (onClose) onClose();
   };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
+  const roleStyle = getRoleBadgeStyle(role);
+  const initial = (user?.username?.[0] || "U").toUpperCase();
 
   return (
     <>
@@ -147,6 +193,103 @@ export function Sidebar({ isOpen, onClose }) {
             </div>
           ))}
         </nav>
+
+        {/* User Account Bar */}
+        {user && (
+          <div
+            style={{
+              margin: "10px 14px 4px 14px",
+              padding: "10px 12px",
+              background: "rgba(14, 23, 48, 0.65)",
+              border: "1px solid rgba(255, 255, 255, 0.09)",
+              borderRadius: "12px",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.25)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: roleStyle.bg,
+                  border: `1px solid ${roleStyle.border}`,
+                  color: roleStyle.text,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  boxShadow: `0 0 8px ${roleStyle.border}`,
+                }}
+              >
+                {initial}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    color: "#f1f5f9",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {user.username}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: roleStyle.text,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {role}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                color: "#94a3b8",
+                padding: "6px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s ease",
+                flexShrink: 0,
+              }}
+              title="Sign out"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#f87171";
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#94a3b8";
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
+              }}
+              aria-label="Sign out"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Bottom Quote Box */}
         <div className="sidebar-quote-card">

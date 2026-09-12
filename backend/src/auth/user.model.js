@@ -17,9 +17,19 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ["admin", "user"],
-        default: "user",
+        enum: ["admin", "operator", "engineer", "viewer"],
+        default: "viewer",
     },
-});
+    status: {
+        type: String,
+        enum: ["PENDING", "ACTIVE", "SUSPENDED"],
+        default: "PENDING",
+    },
+    stationId: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+}, { timestamps: true });
 
 export const User = mongoose.model("User", userSchema);
