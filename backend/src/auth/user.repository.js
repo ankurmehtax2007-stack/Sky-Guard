@@ -5,8 +5,16 @@ export const findUserByEmail = async (email) => {
     if (mongoose.connection.readyState !== 1) {
         return null;
     }
-    return await User.findOne({ email });
+    return await User.findOne({ email: String(email).toLowerCase().trim() });
 };
+
+export const findUserByUsername = async (username) => {
+    if (mongoose.connection.readyState !== 1) {
+        return null;
+    }
+    return await User.findOne({ username: String(username).trim() });
+};
+
 
 export const findUserById = async (id, includePassword = false) => {
     if (mongoose.connection.readyState !== 1) {

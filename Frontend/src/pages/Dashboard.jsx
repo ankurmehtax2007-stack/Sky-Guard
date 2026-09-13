@@ -18,7 +18,6 @@ export default function Dashboard() {
       userName = user.username.charAt(0).toUpperCase() + user.username.slice(1);
     }
   } catch {
-    // default
   }
 
   const greeting = useMemo(() => {
@@ -30,9 +29,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout pageTitle="Dashboard">
-      <div className="dashboard-view">
-        {/* 1. Hero Greeting Banner with Observatory Dome in Top Right */}
-        <div className="dashboard-hero-header">
+      <div className="dashboard-view"><div className="dashboard-hero-header">
           <div className="dashboard-hero-left">
             <h1 className="dashboard-hero-greeting">
               {greeting}, <span className="dashboard-hero-name">{userName}!</span>
@@ -40,47 +37,26 @@ export default function Dashboard() {
             <p className="dashboard-hero-sub">
               All systems are operational. Here&apos;s what&apos;s happening with your network today.
             </p>
-          </div>
-
-          {/* Motto in top right */}
-          <div className="dashboard-hero-right">
+          </div><div className="dashboard-hero-right">
             <span className="dashboard-hero-motto">
               Real-time insights<br />for a safer tomorrow.
             </span>
             <div className="dashboard-hero-bar" />
           </div>
-        </div>
-
-        {/* 2. Stat KPI Cards (6 Boxes) */}
-        <section className="dashboard-section">
+        </div><section className="dashboard-section">
           <SystemOverviewBar />
-        </section>
-
-        {/* 3. Middle Row: Telemetry Stream + Station Overview (Left), System Health + Data Distribution + Recent Alerts (Right Corner) */}
-        <section className="dashboard-section">
+        </section><section className="dashboard-section">
           <div className="dashboard-middle-grid">
             <div className="dashboard-telemetry-col">
               <FleetTelemetryChart />
               <StationOverviewTable />
             </div>
-            <div className="dashboard-health-col">
-              {/* System Health */}
-              <SystemHealth />
-              {/* Data Distribution chart directly below System Health in right corner */}
-              <AnomalyAnalyticsChart />
-              {/* Recent Alerts */}
-              <RecentAnomalies />
+            <div className="dashboard-health-col"><SystemHealth /><AnomalyAnalyticsChart /><RecentAnomalies />
             </div>
           </div>
-        </section>
-
-        {/* 4. Active Anomalies Full-Page Width Section with matching theme */}
-        <section className="dashboard-section dashboard-section--full">
+        </section><section className="dashboard-section dashboard-section--full">
           <AnomalyOverviewPanel />
-        </section>
-
-        {/* 5. Bottom Brand Strip */}
-        <footer className="dashboard-footer-strip">
+        </section><footer className="dashboard-footer-strip">
           <div className="dashboard-footer-left">
             <ShieldCheck size={16} className="dashboard-footer-icon" />
             <span>SkyGuard AI — Intelligent Monitoring for a Resilient Tomorrow.</span>

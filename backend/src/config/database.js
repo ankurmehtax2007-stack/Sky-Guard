@@ -1,7 +1,5 @@
-// mongoose connection
 import mongoose from "mongoose";
 
-// local module import 
 import config from "./config.js";
 import logger from "../utils/logger.js";
 

@@ -60,17 +60,12 @@ export function StationMonitorCard({ reading }) {
       style={{ display: "block", textDecoration: "none" }}
       aria-label={`View station ${reading.stationId} details`}
     >
-      <div className={`station-card-upgraded station-monitor-card--${status}`}>
-        {/* Anomaly banner if active */}
-        {isAnomaly && (
+      <div className={`station-card-upgraded station-monitor-card--${status}`}>{isAnomaly && (
           <div className="station-alert-ribbon">
             <AlertCircle size={12} />
             <span>Telemetry Anomaly Detected</span>
           </div>
-        )}
-
-        {/* Header */}
-        <div className="station-card-header">
+        )}<div className="station-card-header">
           <div>
             <span className="station-card-id">{reading.stationId}</span>
             <div style={{ fontSize: "10px", color: "var(--color-text-muted)", marginTop: "1px" }}>
@@ -83,10 +78,7 @@ export function StationMonitorCard({ reading }) {
               {isOnline ? "Live" : "Offline"}
             </span>
           </div>
-        </div>
-
-        {/* Sensor Readings with Gauge Visualizers */}
-        <div className="station-card-readings">
+        </div><div className="station-card-readings">
           <GaugeCell
             label="Temp"
             sensor="temperature"
@@ -117,10 +109,7 @@ export function StationMonitorCard({ reading }) {
             max={SENSOR_RANGES.pressure.max}
             unit="hPa"
           />
-        </div>
-
-        {/* Footer */}
-        <div className="station-card-footer">
+        </div><div className="station-card-footer">
           <span className="station-card-timestamp">
             {reading.timestamp ? `Updated: ${formatRelativeTime(reading.timestamp)}` : "No data"}
           </span>

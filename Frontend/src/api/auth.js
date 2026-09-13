@@ -1,6 +1,5 @@
 import api from "./axios";
 
-// Register
 export const registerUser = async (userData) => {
   const response = await api.post("/api/auth/register", userData);
 
@@ -14,7 +13,6 @@ export const registerUser = async (userData) => {
   return response.data;
 };
 
-// Login
 export const loginUser = async (credentials) => {
   const response = await api.post("/api/auth/login", credentials);
 
@@ -28,7 +26,6 @@ export const loginUser = async (credentials) => {
   return response.data;
 };
 
-// Logout
 export const logoutUser = async () => {
   try {
     const response = await api.post("/api/auth/logout");
@@ -39,13 +36,11 @@ export const logoutUser = async () => {
   }
 };
 
-// Get current user profile
 export const getMe = async () => {
   const response = await api.get("/api/auth/me");
   return response.data;
 };
 
-// Refresh access token via HTTP-only cookie
 export const refreshToken = async () => {
   const response = await api.post("/api/auth/refresh");
   if (response.data.accessToken) {
@@ -57,25 +52,21 @@ export const refreshToken = async () => {
   return response.data;
 };
 
-// Get all users
 export const getAllUsers = async () => {
   const response = await api.get("/api/auth");
   return response.data;
 };
 
-// Get user by ID
 export const getUserById = async (id) => {
   const response = await api.get(`/api/auth/${id}`);
   return response.data;
 };
 
-// Update user 
 export const updateUser = async (id, userData) => {
   const response = await api.put(`/api/auth/${id}`, userData);
   return response.data;
 };
 
-// Delete user
 export const deleteUser = async (id) => {
   const response = await api.delete(`/api/auth/${id}`);
   return response.data;

@@ -28,11 +28,9 @@ export function Topbar({ pageTitle, onMenuToggle }) {
   const isHealthy = data?.status === "healthy";
   const wsStatus = useWsStatus();
 
-  // User menu state
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Clock state
   const [timeStr, setTimeStr] = useState("");
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem("skyguard_audio_alert") === "true";
@@ -49,7 +47,6 @@ export function Topbar({ pageTitle, onMenuToggle }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Close user dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -98,25 +95,17 @@ export function Topbar({ pageTitle, onMenuToggle }) {
         )}
       </div>
 
-      <div className="topbar-right">
-        {/* Live Clock */}
-        <div className="topbar-clock" title="System Local Clock">
+      <div className="topbar-right"><div className="topbar-clock" title="System Local Clock">
           <Clock size={12} style={{ color: "var(--color-accent)" }} />
           <span>{timeStr || "00:00:00"} IST</span>
-        </div>
-
-        {/* Audio Alert Toggle */}
-        <button
+        </div><button
           onClick={toggleSound}
           className={`topbar-audio-btn ${soundEnabled ? "topbar-audio-btn--active" : ""}`}
           title={soundEnabled ? "Audio siren enabled for critical anomalies" : "Click to enable audio alerts"}
         >
           {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
           <span>{soundEnabled ? "Alarm On" : "Muted"}</span>
-        </button>
-
-        {/* WebSocket real-time status */}
-        <div
+        </button><div
           className="topbar-health"
           title={`WebSocket Stream: ${wsStatus}`}
           style={{ gap: "6px" }}
@@ -137,10 +126,7 @@ export function Topbar({ pageTitle, onMenuToggle }) {
               ? "WS Offline"
               : "Connecting…"}
           </span>
-        </div>
-
-        {/* Backend system health */}
-        <div className="topbar-health">
+        </div><div className="topbar-health">
           <span
             style={{
               display: "inline-block",
@@ -158,10 +144,7 @@ export function Topbar({ pageTitle, onMenuToggle }) {
           <span className="topbar-health-label">
             {loading ? "Probing…" : isHealthy ? "Services OK" : "Degraded"}
           </span>
-        </div>
-
-        {/* User Profile & Logout */}
-        {user && (
+        </div>{user && (
           <div style={{ position: "relative" }} ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}

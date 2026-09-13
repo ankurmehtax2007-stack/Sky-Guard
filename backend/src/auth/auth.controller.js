@@ -1,5 +1,19 @@
 import config from "../config/config.js";
-import { loginService, logoutService, registerService, refreshSessionService, getAllUsersService, getUserByIdService, deleteUserService, createUserService, updateUserService, updateUserStatusService } from "./auth.service.js";
+import {
+    loginService,
+    logoutService,
+    registerService,
+    refreshSessionService,
+    getAllUsersService,
+    getUserByIdService,
+    deleteUserService,
+    createUserService,
+    updateUserService,
+    updateUserStatusService,
+    assignStationService,
+    approveUserService,
+    rejectUserService,
+} from "./auth.service.js";
 import logger from "../utils/logger.js";
 
 export const getMe = async (req, res) => {
@@ -64,50 +78,43 @@ export const loginUser = async (req, res) => {
         });
     } catch (error) {
         logger.error({ error }, "Error in login");
-        res.status(error.status || 500).json({ message: error.message || "Internal server error1" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
 export const registerUser = async (req, res) => {
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, stationId } = req.body;
 
     try {
-        const { user, accessToken, refreshToken } = await registerService(
+        const { user } = await registerService(
             username,
             email,
             password,
             role,
+            stationId,
             req.get("user-agent"),
             req.ip
         );
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: config.nodeEnv === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
         res.status(201).json({
-            message: "User registered successfully",
+            message: "Registration successful. Your account is awaiting administrator approval.",
             user,
-            accessToken,
         });
     } catch (error) {
         logger.error({ error }, "Error in registration");
-        res.status(error.status || 500).json({ message: error.message || "Internal server error2" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
-export const logoutUser = async (req , res) => {
-    try{
+export const logoutUser = async (req, res) => {
+    try {
         const refreshToken = req.cookies.refreshToken;
         await logoutService(refreshToken);
         res.clearCookie("refreshToken");
         return res.status(200).json({ message: "User logged out successfully" });
-    }catch(error){
+    } catch (error) {
         logger.error({ error }, "Error in logout");
-        res.status(error.status || 500).json({ message: error.message || "Internal server error3" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -116,16 +123,13 @@ export const getAllUsers = async (req, res) => {
         const users = await getAllUsersService({
             status: req.query.status,
             stationId: req.query.stationId,
-            role: req.query.role
+            role: req.query.role,
         });
 
         return res.status(200).json(users);
     } catch (error) {
         logger.error({ error }, "Error in fetching users");
-
-        return res.status(500).json({
-            message: "Internal server error"
-        });
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -135,7 +139,7 @@ export const getUserById = async (req, res) => {
         res.status(200).json(user);
     } catch (error) {
         logger.error({ error }, "Error in fetching user");
-        res.status(error.status || 500).json({ message: error.message || "Internal server error5" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -149,7 +153,7 @@ export const updateUser = async (req, res) => {
         res.status(200).json(updatedUser);
     } catch (error) {
         logger.error({ error }, "Error in updating user");
-        res.status(500).json({ message: "Internal server error" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -174,7 +178,7 @@ export const assignStationController = async (req, res) => {
         });
     } catch (error) {
         logger.error({ error }, "Error assigning station to user");
-        res.status(500).json({ message: "Internal server error" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -199,7 +203,7 @@ export const updateUserStatusController = async (req, res) => {
         });
     } catch (error) {
         logger.error({ error }, "Error updating user status");
-        res.status(500).json({ message: "Internal server error" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -207,7 +211,8 @@ export const updateUserRole = async (req, res) => {
     try {
         const { role } = req.body;
         const targetUserId = req.params.id;
-        const updatedUser = await updateUserService(targetUserId, { role });
+        const callerRole = (req.user?.role || "").toLowerCase();
+        const updatedUser = await updateUserService(targetUserId, { role }, callerRole);
 
         res.status(200).json({
             message: "User role updated successfully",
@@ -215,13 +220,13 @@ export const updateUserRole = async (req, res) => {
         });
     } catch (error) {
         logger.error({ error }, "Error updating user role");
-        res.status(500).json({ message: "Internal server error" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
 export const createUserByAdmin = async (req, res) => {
     try {
-        const { username, email, password, role = "viewer", stationId = null, status } = req.body;
+        const { username, email, password, role = "engineer", stationId = null, status } = req.body;
         const newUser = await createUserService(username, email, password, role, stationId, status);
         res.status(201).json({
             message: "User created successfully",
@@ -236,7 +241,7 @@ export const createUserByAdmin = async (req, res) => {
         });
     } catch (error) {
         logger.error({ error }, "Error creating user by admin");
-        res.status(500).json({ message: "Internal server error" });
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -246,6 +251,46 @@ export const deleteUser = async (req, res) => {
         res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
         logger.error({ error }, "Error in deleting user");
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
+    }
+};
+
+export const approveUser = async (req, res) => {
+    try {
+        const updatedUser = await approveUserService(req.params.id, req.user);
+        res.status(200).json({
+            message: "User registration approved successfully",
+            user: {
+                id: updatedUser._id || updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                status: updatedUser.status,
+                stationId: updatedUser.stationId,
+            },
+        });
+    } catch (error) {
+        logger.error({ error }, "Error approving user");
+        res.status(error.status || 500).json({ message: error.message || "Internal server error" });
+    }
+};
+
+export const rejectUser = async (req, res) => {
+    try {
+        const updatedUser = await rejectUserService(req.params.id, req.user);
+        res.status(200).json({
+            message: "User registration rejected",
+            user: {
+                id: updatedUser._id || updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                status: updatedUser.status,
+                stationId: updatedUser.stationId,
+            },
+        });
+    } catch (error) {
+        logger.error({ error }, "Error rejecting user");
         res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };

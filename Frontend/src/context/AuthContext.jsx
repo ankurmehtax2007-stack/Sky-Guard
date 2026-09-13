@@ -34,7 +34,6 @@ export function AuthProvider({ children }) {
   });
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Synchronize and verify session with backend on startup
   useEffect(() => {
     let isMounted = true;
 
@@ -50,7 +49,6 @@ export function AuthProvider({ children }) {
             localStorage.setItem("user", JSON.stringify(data.user));
           }
         } catch {
-          // If token verification failed, try refreshing
           try {
             const refreshData = await refreshToken();
             if (isMounted && refreshData?.user) {
@@ -68,7 +66,6 @@ export function AuthProvider({ children }) {
           }
         }
       } else if (token) {
-        // Token expired, attempt refresh
         try {
           const refreshData = await refreshToken();
           if (isMounted && refreshData?.user) {
@@ -151,7 +148,6 @@ export function AuthProvider({ children }) {
     try {
       await logoutUser();
     } catch {
-      // Clear client state even if backend logout throws
     } finally {
       setUser(null);
       setIsAuthenticated(false);
@@ -162,7 +158,6 @@ export function AuthProvider({ children }) {
 
   const userRole = user?.role?.toLowerCase() || "viewer";
 
-  // Role capability checks
   const isAdmin = userRole === "admin";
   const isEngineer = userRole === "engineer" || userRole === "admin";
   const isOperator = userRole === "operator" || userRole === "engineer" || userRole === "admin";

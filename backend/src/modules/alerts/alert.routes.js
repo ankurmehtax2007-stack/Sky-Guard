@@ -5,7 +5,6 @@ import { PERMISSIONS } from "../../auth/rbac/permissions.js";
 
 const alertRoutes = Router();
 
-// POST /api/alerts/:id/acknowledge -> ADMIN, ENGINEER, OPERATOR (alerts:acknowledge)
 alertRoutes.post(
     "/:id/acknowledge",
     authenticateUser,
@@ -26,7 +25,6 @@ alertRoutes.post(
     }
 );
 
-// POST /api/alerts/:id/resolve -> ADMIN, ENGINEER, OPERATOR (alerts:resolve)
 alertRoutes.post(
     "/:id/resolve",
     authenticateUser,

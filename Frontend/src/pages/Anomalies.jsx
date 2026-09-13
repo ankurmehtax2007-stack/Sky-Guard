@@ -35,7 +35,6 @@ export default function Anomalies() {
     [anomalies, filters]
   );
 
-  // Triage incident counts
   const totalFaultCount = pagination?.total ? Math.max(pagination.total, anomalies.length) : anomalies.length;
   const pendingCount = anomalies.filter((a) => a.status === "pending").length;
   const criticalCount = anomalies.filter((a) => a.status === "pending" && a.severity === "critical").length;
@@ -47,9 +46,7 @@ export default function Anomalies() {
 
   return (
     <AppLayout pageTitle="Anomalies Operations Center">
-      <div className="page-stack">
-        {/* Page Header with Actions */}
-        <div className="page-header-row" style={{ flexWrap: "wrap" }}>
+      <div className="page-stack"><div className="page-header-row" style={{ flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <h2 className="page-heading">Anomaly Detection Log</h2>
@@ -85,10 +82,7 @@ export default function Anomalies() {
               Export CSV Report
             </button>
           </div>
-        </div>
-
-        {/* Incident Triage Summary Cards */}
-        <div className="stat-bar" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+        </div><div className="stat-bar" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
           <div className="stat-item">
             <span className="stat-item-label">Total Faults</span>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -106,7 +106,6 @@ export function StationDetails({ stationId }) {
   const readings = readingData?.readings ?? [];
   const meta = KNOWN_STATIONS[stationId] || { name: "Automatic Weather Station", location: "Active Node", elevation: "Standard" };
 
-  // Calculate station extrema
   const temps = readings.map((r) => r.temperature).filter((v) => typeof v === "number");
   const hums = readings.map((r) => r.humidity).filter((v) => typeof v === "number");
   const press = readings.map((r) => r.pressure).filter((v) => typeof v === "number");
@@ -114,9 +113,7 @@ export function StationDetails({ stationId }) {
   const latestReading = readings[0];
 
   return (
-    <div className="station-details">
-      {/* Station Metadata & KPI Strip */}
-      <div className="stat-bar" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+    <div className="station-details"><div className="stat-bar" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
         <div className="stat-item">
           <span className="stat-item-label">Station Profile</span>
           <span className="stat-item-value" style={{ fontSize: "16px", color: "var(--color-accent)" }}>
@@ -173,10 +170,7 @@ export function StationDetails({ stationId }) {
             {anomalies.filter((a) => a.status === "pending").length} Pending Triage
           </span>
         </div>
-      </div>
-
-      {/* Sensor Trends Area Charts */}
-      <section className="station-section">
+      </div><section className="station-section">
         <h3 className="section-title">Sensor Trends &amp; Telemetry Curves</h3>
         {rError ? (
           <ErrorState message={rError} onRetry={rRefetch} />
@@ -197,10 +191,7 @@ export function StationDetails({ stationId }) {
             <SensorChart readings={readings} sensor="pressure" label="Pressure (hPa)" />
           </div>
         )}
-      </section>
-
-      {/* Station Anomalies */}
-      <section className="station-section">
+      </section><section className="station-section">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 className="section-title">Station Anomaly Incidents</h3>
           <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>{anomalies.length} Records</span>
@@ -254,10 +245,7 @@ export function StationDetails({ stationId }) {
             </table>
           </div>
         )}
-      </section>
-
-      {/* Recent Sensor Telemetry Readings Table */}
-      <section className="station-section">
+      </section><section className="station-section">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 className="section-title">Raw Telemetry Ingestion Log</h3>
           <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
@@ -308,10 +296,7 @@ export function StationDetails({ stationId }) {
             </table>
           </div>
         )}
-      </section>
-
-      {/* Anomaly Diagnosis Modal */}
-      <Modal
+      </section><Modal
         isOpen={!!selectedAnomalyId}
         onClose={() => setSelectedAnomalyId(null)}
         title="Anomaly Investigation & AI Explainability"

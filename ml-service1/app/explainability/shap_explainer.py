@@ -42,14 +42,12 @@ def explain(model, X, feature_names, target_class_id=0, target_class_name='norma
 
     factors = []
 
-    # 1. Genuine SHAP TreeExplainer for Tree-based models (XGBoost / Random Forest)
     try:
         import shap
         if hasattr(model, 'get_booster') or hasattr(model, 'estimators_'):
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(X)
             
-            # Handle multi-class shapes: list of arrays or 3D tensor
             if isinstance(shap_values, list):
                 target_idx = min(int(target_class_id), len(shap_values) - 1)
                 vals = np.asarray(shap_values[target_idx])
@@ -80,7 +78,6 @@ def explain(model, X, feature_names, target_class_id=0, target_class_name='norma
     except Exception:
         pass
 
-    # 2. Dynamic Instance-Level Perturbation Feature Attribution Fallback
     if not factors:
         row = X_mat[0]
         deviations = np.zeros(len(names), dtype=float)

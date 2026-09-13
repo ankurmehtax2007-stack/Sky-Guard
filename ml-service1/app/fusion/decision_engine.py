@@ -50,7 +50,6 @@ def make_decision(fused, probs, classes=None, config=None, iforest=0.0, context=
     root_cause_name = class_names[idx] if idx < len(class_names) else f"class_{idx}"
     ctx = context or {}
 
-    # Extract contextual signals for fallback resolution
     f_count = max(
         _safe_int(ctx.get('temperature_c_frozen_count'), 1),
         _safe_int(ctx.get('humidity_pct_frozen_count'), 1),
@@ -67,7 +66,6 @@ def make_decision(fused, probs, classes=None, config=None, iforest=0.0, context=
     temp_val = _safe_float(ctx.get('temperature_c'), 25.0)
     hum_val = _safe_float(ctx.get('humidity_pct'), 50.0)
 
-    # Check direct physical or temporal anomaly conditions
     is_frozen = f_count >= 4
     is_spatial = spat_z >= 3.0
     is_press_jump = press_val < 980.0 or p_rate >= 3.0
@@ -76,7 +74,6 @@ def make_decision(fused, probs, classes=None, config=None, iforest=0.0, context=
     is_hum_spike = hum_val >= 98.0
     is_multi_conflict = (temp_val >= 42.0 and hum_val >= 85.0)
 
-    # 1. Known anomaly detected with high XGBoost confidence
     if conf >= known_class_threshold and (fused >= anomaly_threshold or conf >= 0.50 or normal < 0.50):
         if is_spatial and root_cause_name in ['temperature_spike', 'normal', 'known_anomaly'] and not is_temp_spike:
             root_cause_name = 'spatial_inconsistency'
@@ -86,7 +83,6 @@ def make_decision(fused, probs, classes=None, config=None, iforest=0.0, context=
             'confidence': round(conf, 4)
         }
 
-    # 2. Anomaly triggered via evidence fusion with contextual root cause assignment
     if fused >= anomaly_threshold or is_frozen or is_spatial or is_press_jump or is_drift or is_temp_spike or is_hum_spike or is_multi_conflict:
         assigned_cause = root_cause_name if (root_cause_name not in ['normal', 'known_anomaly', 'novel_anomaly'] and conf >= 0.35) else None
         
@@ -116,7 +112,6 @@ def make_decision(fused, probs, classes=None, config=None, iforest=0.0, context=
             'confidence': round(float(assigned_conf), 4)
         }
 
-    # 3. Novelty detection
     if iforest >= novelty_threshold and fused >= anomaly_threshold:
         return {
             'decision': 'novel_anomaly',
@@ -124,7 +119,6 @@ def make_decision(fused, probs, classes=None, config=None, iforest=0.0, context=
             'confidence': round(float(max(iforest, 1.0 - normal)), 4)
         }
 
-    # 4. Nominal operation
     return {
         'decision': 'normal',
         'root_cause': 'normal',

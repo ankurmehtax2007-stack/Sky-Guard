@@ -5,7 +5,6 @@ import { PERMISSIONS } from "../../auth/rbac/permissions.js";
 
 const sensorRoutes = Router();
 
-// PATCH /api/sensors/:id/threshold -> ADMIN, ENGINEER (sensors:configure)
 sensorRoutes.patch(
     "/:id/threshold",
     authenticateUser,

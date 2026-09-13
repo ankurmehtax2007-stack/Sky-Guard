@@ -63,7 +63,6 @@ def analyze(req: Union[RawTelemetry, AnalyzeRequest, dict[str, Any]]):
         iso, xgb, meta = load_artifacts()
         records = _extract_records(req)
 
-        # Extract request-level generate_report flag if present
         generate_report = None
         if hasattr(req, 'generate_report') and req.generate_report is not None:
             generate_report = req.generate_report
@@ -92,7 +91,6 @@ def generate_report_endpoint(req: dict[str, Any]):
     diagnostic = req.get('diagnostic') or req
     instruction = req.get('instruction', 'Explain the incident, recommend maintenance actions, and provide AI recommendations for improvements.')
     
-    # Force report generation on-demand for this station / telemetry
     ai_rep = generate_ai_report(diagnostic, instruction=instruction, generate_report=True, only_on_anomaly=False)
     return {
         'status': 'success',

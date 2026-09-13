@@ -10,15 +10,6 @@ import {
   mergeAnomalies,
 } from "../utils/anomalyStorage";
 
-/**
- * Extends useLatestReadings with real-time WebSocket updates.
- *
- * Backend broadcasts: { type: "READING_UPDATED", data: ReadingObject }
- *
- * 1. Fetches initial latest readings via REST
- * 2. Listens on the shared WebSocket for READING_UPDATED events
- * 3. Updates the in-memory map (keyed by stationId) with the live reading
- */
 export function useRealtimeReadings() {
   const {
     data: initialReadings,
@@ -29,7 +20,6 @@ export function useRealtimeReadings() {
 
   const [liveMap, setLiveMap] = useState(new Map());
 
-  // Seed map from REST once it loads
   useEffect(() => {
     if (initialReadings && initialReadings.length > 0) {
       setLiveMap((prev) => {
@@ -44,7 +34,6 @@ export function useRealtimeReadings() {
     }
   }, [initialReadings]);
 
-  // Subscribe to WebSocket messages via shared context
   const handleMessage = useCallback((msg) => {
     if (msg.type === "READING_UPDATED" && msg.data?.stationId) {
       if (!ACTIVE_STATION_IDS.includes(msg.data.stationId)) return;
@@ -92,15 +81,6 @@ export function useRealtimeReadings() {
   };
 }
 
-/**
- * Extends a base anomaly list with real-time WebSocket updates.
- *
- * Backend broadcasts:
- * 1. { type: "ANOMALY_DETECTED", stationId, anomaly: AnomalyObject }
- * 2. { type: "READING_UPDATED", data: ReadingObject } (where anomaly=true or anomalyStatus="detected")
- *
- * Prepends live anomalies to the top, deduplicates, and saves to storage.
- */
 export function useRealtimeAnomalies(baseData) {
   const [liveAnomalies, setLiveAnomalies] = useState(() => {
     if (baseData && baseData.length > 0) return baseData;
@@ -117,7 +97,6 @@ export function useRealtimeAnomalies(baseData) {
   }, [baseData]);
 
   const handleMessage = useCallback((msg) => {
-    // Authoritative Anomaly Detection Event from ML Service
     if (msg.type === "ANOMALY_DETECTED" && msg.anomaly) {
       if (msg.stationId && !ACTIVE_STATION_IDS.includes(msg.stationId)) return;
       const anom = {
@@ -137,13 +116,6 @@ export function useRealtimeAnomalies(baseData) {
   return liveAnomalies.filter((a) => !a.stationId || ACTIVE_STATION_IDS.includes(a.stationId));
 }
 
-/**
- * Tracks the total count of active readings across stations in real time.
- * - Seeds initial count from backend /api/readings/stats/count (or per-station fallback)
- * - Increments live on every incoming READING_UPDATED WebSocket packet
- * - Tracks live ingestion rate (readings/min)
- * - Computes dynamic activity sparkline bar heights and a pulse flag for animations
- */
 export function useRealtimeReadingCount() {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -154,7 +126,6 @@ export function useRealtimeReadingCount() {
   const recentTimesRef = useRef([]);
   const pulseTimerRef = useRef(null);
 
-  // Synchronize count from database
   const syncCount = useCallback(async () => {
     try {
       let total = 0;
@@ -164,7 +135,6 @@ export function useRealtimeReadingCount() {
           total = res.data.total;
         }
       } catch (err) {
-        // Fallback: fetch per-station pagination total
         const results = await Promise.all(
           ACTIVE_STATION_IDS.map((id) =>
             getStationReadings(id, { limit: 1 })
@@ -179,20 +149,17 @@ export function useRealtimeReadingCount() {
         setCount((prev) => (total > prev ? total : prev));
       }
     } catch (e) {
-      // ignore
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Initial fetch and resync every 30 seconds
   useEffect(() => {
     syncCount();
     const timer = setInterval(syncCount, 30000);
     return () => clearInterval(timer);
   }, [syncCount]);
 
-  // Handle incoming WebSocket messages
   const handleMessage = useCallback((msg) => {
     if (msg.type === "READING_UPDATED" && msg.data?.stationId) {
       if (!ACTIVE_STATION_IDS.includes(msg.data.stationId)) return;
@@ -202,17 +169,14 @@ export function useRealtimeReadingCount() {
       recentTimesRef.current = updated;
       setReadingsInLastMinute(updated.length);
 
-      // Increment count live
       setCount((prev) => (prev > 0 ? prev + 1 : 1));
 
-      // Visual pulse
       setIsPulsing(true);
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
       pulseTimerRef.current = setTimeout(() => {
         setIsPulsing(false);
       }, 600);
 
-      // Compute 5 bar heights based on 12-second intervals of the last minute
       const counts = [0, 0, 0, 0, 0];
       for (const t of updated) {
         const ageSec = (now - t) / 1000;
@@ -230,7 +194,6 @@ export function useRealtimeReadingCount() {
 
   useWsMessage(handleMessage);
 
-  // Prune timestamps older than 60s periodically
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();

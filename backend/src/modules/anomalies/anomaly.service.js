@@ -4,7 +4,6 @@ import logger from "../../utils/logger.js";
 import AppError from "../../utils/appError.js";
 
 export const saveAnomaly = async (reading, prediction) => {
-    // Map composite root_cause to valid enum: ["temperature", "humidity", "pressure"]
     let sensor = "temperature";
     const rawSensor = String(prediction.sensor || "").toLowerCase();
     if (rawSensor.includes("hum")) {
@@ -46,7 +45,6 @@ export const saveAnomaly = async (reading, prediction) => {
         }
     }
 
-    // 1. Reading-level deduplication: If an anomaly already exists for this reading, return it
     if (reading._id) {
         const existing = await findAnomalyByReadingId(reading._id);
         if (existing) {
@@ -55,8 +53,6 @@ export const saveAnomaly = async (reading, prediction) => {
         }
     }
 
-    // 2. Incident-level deduplication: If this station & sensor already triggered an
-    // active anomaly incident within the last 20 seconds, suppress duplicates
     const recentIncident = await findRecentIncident(reading.stationId, sensor, 20);
     if (recentIncident) {
         logger.info(

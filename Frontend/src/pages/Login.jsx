@@ -28,7 +28,6 @@ export default function Login() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // If already authenticated, redirect to destination
   useEffect(() => {
     if (isAuthenticated) {
       const destination = location.state?.from?.pathname || "/dashboard";
@@ -66,7 +65,6 @@ export default function Login() {
         setLoading(false);
       }
     } else {
-      // Registration
       if (!form.username || !form.email || !form.password) {
         setError("Please fill out all required fields.");
         return;
@@ -93,7 +91,6 @@ export default function Login() {
     }
   };
 
-  // Quick fill helper for testing different roles during demo
   const quickFill = (demoRole) => {
     setMode("register");
     setForm({
@@ -107,18 +104,13 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-panel" style={{ maxWidth: mode === "register" ? "440px" : "390px" }}>
-        {/* Brand */}
-        <div className="login-brand">
+      <div className="login-panel" style={{ maxWidth: mode === "register" ? "440px" : "390px" }}><div className="login-brand">
           <ShieldCheck size={32} strokeWidth={1.5} className="login-brand-icon" />
           <div>
             <h1 className="login-title">SkyGuard AI</h1>
             <p className="login-subtitle">Intelligent Weather Station Monitoring</p>
           </div>
-        </div>
-
-        {/* Tab Switcher */}
-        <div
+        </div><div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -179,10 +171,7 @@ export default function Login() {
             <UserPlus size={14} />
             <span>Create Account</span>
           </button>
-        </div>
-
-        {/* Form */}
-        <form className="login-form" onSubmit={handleSubmit} noValidate>
+        </div><form className="login-form" onSubmit={handleSubmit} noValidate>
           {mode === "register" && (
             <div className="form-group">
               <label className="form-label" htmlFor="login-username">
@@ -323,10 +312,7 @@ export default function Login() {
               ? "Sign in to Mission Control"
               : "Create Authorized Account"}
           </button>
-        </form>
-
-        {/* Demo Quick-Fill Bar */}
-        <div
+        </form><div
           style={{
             paddingTop: "14px",
             borderTop: "1px solid var(--color-border)",

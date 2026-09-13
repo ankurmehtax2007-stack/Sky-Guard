@@ -9,20 +9,17 @@ def _find_dir(dir_name: str) -> Path:
         p = Path(env_val)
         if p.exists(): return p.resolve()
         
-    # Search all ancestors of CURRENT_FILE
     for parent in [CURRENT_FILE.parent, *CURRENT_FILE.parents]:
         cand = parent / dir_name
         if cand.exists() and cand.is_dir():
             return cand.resolve()
             
-    # Search relative to current working directory
     cwd = Path.cwd().resolve()
     for parent in [cwd, *cwd.parents]:
         cand = parent / dir_name
         if cand.exists() and cand.is_dir():
             return cand.resolve()
             
-    # Docker mount fallback
     docker_cand = Path(f"/app/{dir_name}")
     if docker_cand.exists() and docker_cand.is_dir():
         return docker_cand.resolve()

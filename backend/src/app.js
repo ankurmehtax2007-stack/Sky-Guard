@@ -16,6 +16,8 @@ import sensorRoutes from "./modules/sensors/sensor.routes.js";
 import alertRoutes from "./modules/alerts/alert.routes.js";
 import simulationRoutes from "./modules/simulation/simulation.routes.js";
 import auditRoutes from "./modules/audit/audit.routes.js";
+import taskRoutes from "./modules/tasks/task.routes.js";
+import notificationRoutes from "./modules/notifications/notification.routes.js";
 
 const app = express();
 app.use(pinoHttp({ logger }));
@@ -30,18 +32,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// Auth & User Management routes
+// API routes.
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
-// Mission Control & Operational RBAC Routes
 app.use("/api/stations", stationRoutes);
 app.use("/api/sensors", sensorRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/simulation", simulationRoutes);
 app.use("/api/audit-logs", auditRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/notifications", notificationRoutes);
 
-// Telemetry & Health routes
 app.use("/api/readings", readingRoutes);
 app.use("/api/anomalies", anomalyRouter);
 app.use("/api/health", healthRoutes);

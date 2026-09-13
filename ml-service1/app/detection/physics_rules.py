@@ -31,12 +31,10 @@ def bin_physics_score(scores):
 def evaluate_physics(df: pd.DataFrame, cfg: dict = None) -> pd.DataFrame:
     c = cfg or {}
 
-    # 1. Get sensor values
     temperature = df["temperature_c"]
     humidity = df["humidity_pct"]
     pressure = df["pressure_hpa"]
 
-    # 2. Operating limits
     temp_max = min(float(c.get("temp_max_c", 48.0)), 46.0)
     temp_min = max(float(c.get("temp_min_c", -10.0)), -5.0)
 
@@ -51,14 +49,12 @@ def evaluate_physics(df: pd.DataFrame, cfg: dict = None) -> pd.DataFrame:
         above = np.maximum(value - maximum, 0) / margin
         return np.clip(below + above, 0, 1)
 
-    # 3. Range Anomaly
     temperature_range = range_anomaly(temperature, temp_min, temp_max, 3.0)
     humidity_range = range_anomaly(humidity, humidity_min, humidity_max, 2.0)
     pressure_range = range_anomaly(pressure, pressure_min, pressure_max, 12.0)
 
     range_score = np.maximum.reduce([temperature_range, humidity_range, pressure_range])
 
-    # 4. Rate-of-Change Anomaly
     max_temperature_rate = float(c.get("temp_max_rate_c_per_hr", 5.0))
     max_humidity_rate = float(c.get("humidity_max_rate_pct_per_hr", 18.0))
     max_pressure_rate = float(c.get("pressure_max_rate_hpa_per_hr", 3.0))
@@ -74,7 +70,6 @@ def evaluate_physics(df: pd.DataFrame, cfg: dict = None) -> pd.DataFrame:
     rate_score = np.maximum.reduce([temperature_rate, humidity_rate, pressure_rate])
     rate_score = np.clip(np.nan_to_num(rate_score, nan=0.0), 0, 1)
 
-    # 5. Dew-point Depression Anomaly
     dewpoint_depression = df["dewpoint_depression_c"] if "dewpoint_depression_c" in df.columns else (temperature - humidity * 0.2)
     max_depression = float(c.get("max_dewpoint_depression_c", 35.0))
     min_depression = float(c.get("min_dewpoint_depression_c", -0.5))
@@ -83,12 +78,10 @@ def evaluate_physics(df: pd.DataFrame, cfg: dict = None) -> pd.DataFrame:
     dewpoint_high = np.maximum(dewpoint_depression - max_depression, 0) / 10.0
     dewpoint_score = np.clip(dewpoint_low + dewpoint_high, 0, 1)
 
-    # 6. Cross-Sensor Anomaly
     high_temperature = np.maximum(temperature - 42.0, 0) / 8.0
     high_humidity = np.maximum(humidity - 85.0, 0) / 15.0
     cross_score = np.clip(high_temperature + high_humidity, 0, 1)
 
-    # 7. Combined Score
     combined_score = (
         0.40 * range_score +
         0.30 * rate_score +
@@ -98,7 +91,6 @@ def evaluate_physics(df: pd.DataFrame, cfg: dict = None) -> pd.DataFrame:
     combined_score = np.maximum(combined_score, range_score)
     combined_score = np.clip(np.nan_to_num(combined_score, nan=0.0), 0, 1)
 
-    # 8. Create result with binned levels
     result = pd.DataFrame(index=df.index)
     result["physics_range_score"] = bin_physics_score(range_score)
     result["physics_rate_score"] = bin_physics_score(rate_score)

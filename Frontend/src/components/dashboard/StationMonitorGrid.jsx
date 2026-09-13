@@ -21,7 +21,6 @@ export function StationMonitorGrid() {
 
   const filteredReadings = useMemo(() => {
     return readings.filter((r) => {
-      // Search
       if (search) {
         const q = search.toLowerCase();
         const matchId = (r.stationId || "").toLowerCase().includes(q);
@@ -40,7 +39,6 @@ export function StationMonitorGrid() {
     });
   }, [readings, filter, search]);
 
-  // Group readings by City
   const groupedByCity = useMemo(() => {
     const groups = {};
     for (const r of filteredReadings) {
@@ -104,10 +102,7 @@ export function StationMonitorGrid() {
             }`}
             title={wsStatus === "connected" ? "Real-time updates active" : "Connecting…"}
           />
-        </div>
-
-        {/* Filter Pills & Search */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        </div><div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <div style={{ position: "relative" }}>
             <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} />
             <input

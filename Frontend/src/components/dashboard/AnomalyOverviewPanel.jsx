@@ -48,7 +48,6 @@ export function AnomalyOverviewPanel() {
     return <ErrorState message={`Unable to load anomalies. ${error}`} onRetry={refetch} />;
   }
 
-  // Active (pending) anomalies, most recent first
   const active = allAnomalies
     .filter((a) => a.status === "pending")
     .slice(0, 6);

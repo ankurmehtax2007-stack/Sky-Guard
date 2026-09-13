@@ -22,7 +22,6 @@ const checkMQTT = async () => {
 };
 
 const checkMLService = async () => {
-    // FASTAPI ke aane ke baad kaa kaam (IMPORTANT)!!!!!!!!
     return {
         status: "up"
     };

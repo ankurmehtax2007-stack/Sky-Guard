@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import config from "../config/config.js";
 import { findUserById } from "./user.repository.js";
 import { getPermissionsForRole } from "./rbac/permissions.js";
-import { authorizeStationAccess } from "../middlewares/stationAuth.middleware.js";
+import { authorizeStationAccess, authorizeTaskAccess } from "../middlewares/stationAuth.middleware.js";
 
 export const authenticateUser = async (req, res, next) => {
     const authHeader = req.headers["authorization"];
@@ -26,7 +26,6 @@ export const authenticateUser = async (req, res, next) => {
             try {
                 user = await findUserById(decoded.userId);
             } catch {
-                // DB lookup failed or unavailable
             }
         }
 
@@ -48,13 +47,11 @@ export const authenticateUser = async (req, res, next) => {
             });
         }
 
-        // Standardize status and stationId defaults
         const userRole = (user.role || "").toLowerCase();
         user.role = userRole;
         user.status = user.status || (userRole === "admin" ? "ACTIVE" : "PENDING");
         user.stationId = user.stationId || null;
 
-        // Attach user and computed permissions
         req.user = user;
         req.user.permissions = getPermissionsForRole(user.role);
 
@@ -93,7 +90,6 @@ export const optionalAuthenticateUser = async (req, res, next) => {
             try {
                 user = await findUserById(decoded.userId);
             } catch {
-                // DB lookup failed or unavailable
             }
         }
 
@@ -118,23 +114,12 @@ export const optionalAuthenticateUser = async (req, res, next) => {
             req.user.permissions = getPermissionsForRole(user.role);
         }
     } catch {
-        // Continue even if token is invalid
     }
     next();
 };
 
-export { authorizeStationAccess };
+export { authorizeStationAccess, authorizeTaskAccess };
 
-/**
- * Reusable RBAC Permission Authorization Middleware
- * Verifies that the authenticated user possesses the required permission(s).
- * Returns 401 Unauthorized if not authenticated.
- * Returns 403 Forbidden if user lacks required permission.
- *
- * @param {string|string[]} requiredPermission - Single permission or array of acceptable permissions
- * @param {object} [options]
- * @param {boolean} [options.matchAny=true] - If true, user needs any one of the array permissions; if false, all.
- */
 export const authorize = (requiredPermission, options = { matchAny: true }) => {
     return (req, res, next) => {
         if (!req.user) {
@@ -167,9 +152,6 @@ export const authorize = (requiredPermission, options = { matchAny: true }) => {
     };
 };
 
-/**
- * Legacy Role Authorizer (kept for backwards compatibility)
- */
 export const authorizeRole = (allowedRoles) => {
     return (req, res, next) => {
         if (!req.user) {

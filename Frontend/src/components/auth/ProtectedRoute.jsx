@@ -41,7 +41,6 @@ export function ProtectedRoute({ children, requireAdmin = false, allowedRoles = 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Admin role check
   if (requireAdmin && !isAdmin) {
     return (
       <div
@@ -100,7 +99,6 @@ export function ProtectedRoute({ children, requireAdmin = false, allowedRoles = 
     );
   }
 
-  // Generic allowed roles check
   if (allowedRoles && !allowedRoles.includes(role)) {
     return (
       <div

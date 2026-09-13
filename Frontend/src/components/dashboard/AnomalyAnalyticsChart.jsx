@@ -22,7 +22,6 @@ export function AnomalyAnalyticsChart() {
 
   const totalReadings = readings.length > 0 ? readings.length * 45 + 2 : 137;
 
-  // 3-way distribution data for Temperature, Humidity, Pressure
   const chartData = useMemo(() => {
     return [
       { name: "Temperature", value: Math.round(totalReadings / 3), percent: "33.3%", color: SENSOR_COLORS.Temperature },
@@ -46,9 +45,7 @@ export function AnomalyAnalyticsChart() {
         </div>
       </div>
 
-      <div className="data-distribution-body">
-        {/* Donut Chart with Center Total */}
-        <div className="data-distribution-chart-wrap">
+      <div className="data-distribution-body"><div className="data-distribution-chart-wrap">
           <div style={{ width: 140, height: 140, position: "relative" }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -82,10 +79,7 @@ export function AnomalyAnalyticsChart() {
               <span className="data-distribution-center-sub">Total Readings</span>
             </div>
           </div>
-        </div>
-
-        {/* Legend List */}
-        <div className="data-distribution-legend">
+        </div><div className="data-distribution-legend">
           {chartData.map((item) => (
             <div key={item.name} className="data-distribution-legend-row">
               <div className="data-distribution-legend-left">

@@ -10,7 +10,6 @@ const getWsUrl = () => {
       const protocol = url.protocol === "https:" ? "wss:" : "ws:";
       return `${protocol}//${url.host}`;
     } catch {
-      // ignore URL parsing error
     }
   }
   return "ws://localhost:3000";
@@ -20,11 +19,6 @@ const WS_URL = getWsUrl();
 const RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 
-/**
- * Low-level WebSocket hook.
- * Manages connection lifecycle with auto-reconnect.
- * Calls `onMessage(parsedData)` whenever a message arrives.
- */
 export function useWebSocket({ onMessage }) {
   const wsRef = useRef(null);
   const attemptsRef = useRef(0);
@@ -42,7 +36,6 @@ export function useWebSocket({ onMessage }) {
   const connect = useCallback(() => {
     if (!mountedRef.current) return;
 
-    // Don't open a second socket if one is already open/connecting
     if (
       wsRef.current &&
       (wsRef.current.readyState === WebSocket.OPEN ||
@@ -67,7 +60,6 @@ export function useWebSocket({ onMessage }) {
         const data = JSON.parse(event.data);
         onMessageRef.current?.(data);
       } catch {
-        // ignore malformed messages
       }
     };
 

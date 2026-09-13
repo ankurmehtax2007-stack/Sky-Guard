@@ -12,7 +12,6 @@ export const injectAnomaly = (reading) => {
         }
         return reading;
     }
-    // Realistic anomaly injection probability (12% of cycles, allowing smooth baselines)
     const shouldInject = Math.random() < 0.05;
 
     if (!shouldInject) {
@@ -27,14 +26,12 @@ export const injectAnomaly = (reading) => {
 
     switch (anomalyType) {
         case 1: {
-            // Temperature spike (+16-24°C) or cryogenic dip (-10-14°C)
             const change = direction > 0 ? (16 + Math.random() * 8) : -(10 + Math.random() * 5);
             reading.temperature = Number(Math.max(3.0, (reading.temperature + change)).toFixed(1));
             break;
         }
 
         case 2: {
-            // Humidity spike or arid drop
             const change = 25 + Math.random() * 15;
             const newHum = reading.humidity + change * direction;
             reading.humidity = Number(Math.min(98.0, Math.max(12.0, newHum)).toFixed(1));
@@ -42,13 +39,11 @@ export const injectAnomaly = (reading) => {
         }
 
         case 3: {
-            // Pressure surge or barometric dip
             const change = 25 + Math.random() * 20;
             reading.pressure = Number((reading.pressure + change * direction).toFixed(1));
             break;
         }
 
-        // Frozen sensor with an extreme reading
         case 4: {
             const sensors = ["temperature", "humidity", "pressure"];
             const sensor = sensors[Math.floor(Math.random() * sensors.length)];

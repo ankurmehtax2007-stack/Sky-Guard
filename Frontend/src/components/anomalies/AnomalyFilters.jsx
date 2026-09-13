@@ -9,9 +9,7 @@ export function AnomalyFilters({ filters, onChange, stations }) {
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   return (
-    <div className="filters-bar" style={{ gap: "10px" }}>
-      {/* Search Input */}
-      <div style={{ position: "relative" }}>
+    <div className="filters-bar" style={{ gap: "10px" }}><div style={{ position: "relative" }}>
         <Search
           size={14}
           style={{

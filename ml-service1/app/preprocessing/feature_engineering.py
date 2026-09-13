@@ -43,7 +43,6 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df['month_sin'] = np.sin(2 * np.pi * df.month / 12.0)
     df['month_cos'] = np.cos(2 * np.pi * df.month / 12.0)
     
-    # Compute cluster means and deviations with fallback to regional baselines
     for sensor, prefix in [('temperature_c', 'temp'), ('pressure_hpa', 'press'), ('humidity_pct', 'hum')]:
         means = []
         stds = []
@@ -97,7 +96,6 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         base_mean = df[f'cluster_{prefix}_mean']
         base_std = df[f'cluster_{prefix}_std']
         
-        # When previous lag is missing, fill with current value
         calc_lag1 = lag1.fillna(df[col])
         calc_lag24 = lag24.fillna(df[col])
         

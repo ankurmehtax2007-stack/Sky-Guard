@@ -39,7 +39,15 @@ export const processReading = async (reading) => {
                             type: "READING_UPDATED",
                             data: updatedReading
                         });
-                    } catch (err) {}
+                    } catch (error) {
+                        logger.error(
+                            {
+                                err: error,
+                                readingId: savedReading._id
+                            },
+                            "Error broadcasting updated reading"
+                        );
+                    }
                 } catch (error) {
                     logger.error(
                         {
@@ -246,4 +254,3 @@ export const fetchTotalReadingsCount = async (stationIds = null) => {
     const total = await countTotalReadings(stationIds);
     return total;
 };
-

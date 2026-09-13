@@ -1,4 +1,3 @@
-// local modules import
 import { fetchLatestReadings, fetchStationReadings, fetchTotalReadingsCount } from "./reading.service.js";
 import { paginationSchema } from "./reading.validator.js";
 import asyncHandler from "../../utils/asyncHandler.js";

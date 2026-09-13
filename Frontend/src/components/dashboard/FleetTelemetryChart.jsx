@@ -30,7 +30,6 @@ export function FleetTelemetryChart() {
   const [readingsData, setReadingsData] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Fetch recent readings for AWS_01, AWS_02, AWS_03
   useEffect(() => {
     let mounted = true;
     const fetchFleetData = async () => {
@@ -56,7 +55,6 @@ export function FleetTelemetryChart() {
 
         setReadingsData(map);
       } catch {
-        // keep fallback
       } finally {
         if (mounted) setLoading(false);
       }
@@ -70,7 +68,6 @@ export function FleetTelemetryChart() {
     };
   }, []);
 
-  // Listen to live readings from WebSocket to stream telemetry in real time
   const handleWsMessage = useCallback((msg) => {
     if (msg.type === "READING_UPDATED" && msg.data?.stationId) {
       const r = msg.data;
@@ -87,7 +84,6 @@ export function FleetTelemetryChart() {
 
   useWsMessage(handleWsMessage);
 
-  // Format merged timeline data for chart
   const chartData = useMemo(() => {
     const stations = Object.keys(readingsData);
     if (stations.length === 0) return [];
@@ -139,12 +135,7 @@ export function FleetTelemetryChart() {
               Real-time view of temperature, humidity and pressure across selected stations
             </p>
           </div>
-        </div>
-
-        {/* Controls: Time ranges & Sensor switcher */}
-        <div className="telemetry-controls-wrap">
-          {/* Time range pills */}
-          <div className="telemetry-range-group">
+        </div><div className="telemetry-controls-wrap"><div className="telemetry-range-group">
             {TIME_RANGES.map((rng) => (
               <button
                 key={rng}
@@ -154,10 +145,7 @@ export function FleetTelemetryChart() {
                 {rng}
               </button>
             ))}
-          </div>
-
-          {/* Sensor switch buttons */}
-          <div className="telemetry-sensor-group">
+          </div><div className="telemetry-sensor-group">
             <button
               className={`telemetry-sensor-btn ${selectedSensor === "temperature" ? "telemetry-sensor-btn--active" : ""}`}
               onClick={() => setSelectedSensor("temperature")}

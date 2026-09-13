@@ -44,7 +44,6 @@ export default function Insights() {
   const [aiReportData, setAiReportData] = useState(null);
   const [loadingReport, setLoadingReport] = useState(false);
 
-  // Interactive Sandbox State for Real-Time Inference
   const [testTemp, setTestTemp] = useState(48.5);
   const [testHum, setTestHum] = useState(25.0);
   const [testPress, setTestPress] = useState(955.0);
@@ -62,7 +61,6 @@ export default function Insights() {
     );
   }, [readings, selectedStationId]);
 
-  // Extract or synthesize ML diagnostic analysis
   const analysis = useMemo(() => {
     if (sandboxResult) return sandboxResult;
     const existing = currentReading?.anomalyPrediction?.analysis;
@@ -122,7 +120,6 @@ export default function Insights() {
     };
   }, [currentReading, selectedStationId, sandboxResult]);
 
-  // Transform SHAP factors for BarChart
   const shapData = useMemo(() => {
     const factors = analysis?.explanation?.shap_factors || [];
     return factors.map((f) => ({
@@ -131,7 +128,6 @@ export default function Insights() {
     }));
   }, [analysis]);
 
-  // 5-Axis Multi-Source Evidence Radar Data
   const radarData = useMemo(() => {
     const ev = analysis?.evidence || {};
     return [
@@ -143,7 +139,6 @@ export default function Insights() {
     ];
   }, [analysis]);
 
-  // Fetch dynamic AI report & improvement recommendations from ML Service
   const fetchAiReport = async (readingOverride) => {
     const r = readingOverride || currentReading;
     setLoadingReport(true);
@@ -187,11 +182,9 @@ export default function Insights() {
   };
 
   useEffect(() => {
-    // LLM report is on-demand: reset report when switching stations or simulation state
     setAiReportData(null);
   }, [selectedStationId, sandboxResult]);
 
-  // Interactive Sandbox Simulation Handler
   const handleRunSimulation = async () => {
     setIsSimulating(true);
     try {
@@ -213,7 +206,6 @@ export default function Insights() {
         }
       }
     } catch {
-      // Fallback local synthetic calculation
       const isAnom = testTemp > 45 || testTemp < 5 || testHum > 90 || testPress < 960;
       setSandboxResult({
         station: { id: selectedStationId, name: KNOWN_STATIONS[selectedStationId]?.name || "Station" },
@@ -256,9 +248,7 @@ export default function Insights() {
 
   return (
     <AppLayout pageTitle="Explainable AI &amp; LLM Insights">
-      <div className="page-stack">
-        {/* ── Header Controls & Station Selector ── */}
-        <div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
+      <div className="page-stack"><div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
@@ -280,10 +270,7 @@ export default function Insights() {
             <p className="page-description">
               Multi-source 5-tier machine learning inference, SHAP attribution trees &amp; Mistral LLM root-cause briefings
             </p>
-          </div>
-
-          {/* Station Selector Pills */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          </div><div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "12px", color: "var(--color-text-muted)", fontWeight: 600 }}>Station:</span>
             <div className="sensor-tab-group">
               {ACTIVE_STATION_IDS.map((id) => (
@@ -300,18 +287,13 @@ export default function Insights() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* ── Top KPI Stat Strip ── */}
-        <div
+        </div><div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "14px",
           }}
-        >
-          {/* Fused Score */}
-          <div className="stat-card">
+        ><div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Fused Anomaly Score</span>
               <Activity size={16} color="#0ea5e9" />
@@ -322,10 +304,7 @@ export default function Insights() {
             <span className="stat-card-subtext">
               Status: <strong>{analysis.anomaly.decision.toUpperCase()}</strong>
             </span>
-          </div>
-
-          {/* Diagnosed Condition */}
-          <div className="stat-card">
+          </div><div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Diagnosed Root Cause</span>
               <AlertTriangle size={16} color="#f59e0b" />
@@ -336,10 +315,7 @@ export default function Insights() {
             <span className="stat-card-subtext">
               Severity: <strong>{analysis.anomaly.severity}</strong> • Conf: {(analysis.anomaly.confidence * 100).toFixed(0)}%
             </span>
-          </div>
-
-          {/* Health Index */}
-          <div className="stat-card">
+          </div><div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Station Health Index</span>
               <ShieldAlert size={16} color="#6366f1" />
@@ -348,10 +324,7 @@ export default function Insights() {
               {analysis.health.score} / 100
             </div>
             <span className="stat-card-subtext">Rating: {analysis.health.status}</span>
-          </div>
-
-          {/* Active Model Stack */}
-          <div className="stat-card">
+          </div><div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Inference Engine</span>
               <Cpu size={16} color="#34d399" />
@@ -361,12 +334,7 @@ export default function Insights() {
             </div>
             <span className="stat-card-subtext">XGBoost &amp; Isolation Forest</span>
           </div>
-        </div>
-
-        {/* ── Main Diagnostics Grid ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "20px" }}>
-          {/* Left 1: SHAP Waterfall Attribution */}
-          <div className="card" style={{ padding: "20px" }}>
+        </div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "20px" }}><div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Layers size={16} color="#0ea5e9" />
@@ -407,10 +375,7 @@ export default function Insights() {
                 Stabilizing Factor (Lowers Risk)
               </span>
             </div>
-          </div>
-
-          {/* Left 2: Multi-Source Evidence Radar */}
-          <div className="card" style={{ padding: "20px" }}>
+          </div><div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Activity size={16} color="#6366f1" />
@@ -448,10 +413,7 @@ export default function Insights() {
               Fused Decision: Temporal, Spatial, Isolation Forest, XGBoost and Thermodynamic consistency checks.
             </p>
           </div>
-        </div>
-
-        {/* ── Mistral LLM Automated Diagnostic Report Viewer ── */}
-        <div
+        </div><div
           className="card"
           style={{
             padding: "24px",
@@ -514,10 +476,7 @@ export default function Insights() {
                 {analysis.anomaly.detected ? "ACTION REQUIRED" : "NOMINAL TELEMETRY"}
               </span>
             </div>
-          </div>
-
-          {/* AI Recommendations for Improvements (Shown when report has been generated) */}
-          {aiReportData?.ai_recommendations && aiReportData.ai_recommendations.length > 0 && (
+          </div>{aiReportData?.ai_recommendations && aiReportData.ai_recommendations.length > 0 && (
             <div
               style={{
                 marginBottom: "16px",
@@ -576,10 +535,7 @@ export default function Insights() {
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Diagnostic Briefing Content */}
-          <div
+          )}<div
             style={{
               backgroundColor: "rgba(10, 15, 29, 0.85)",
               border: "1px solid rgba(148, 163, 184, 0.12)",
@@ -638,10 +594,7 @@ export default function Insights() {
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Operator Feedback Buttons */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px", flexWrap: "wrap", gap: "10px" }}>
+          </div><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px", flexWrap: "wrap", gap: "10px" }}>
             <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
               {feedbackSent ? `Feedback recorded: "${feedbackSent}"` : "Was this automated diagnosis accurate?"}
             </span>
@@ -664,10 +617,7 @@ export default function Insights() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* ── Interactive Sandbox: Run Real-Time ML Inference ── */}
-        <div className="card" style={{ padding: "20px" }}>
+        </div><div className="card" style={{ padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Sliders size={16} color="#0ea5e9" />
@@ -687,9 +637,7 @@ export default function Insights() {
               gap: "16px",
               marginBottom: "16px",
             }}
-          >
-            {/* Temp slider */}
-            <div>
+          ><div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                 <span style={{ color: "var(--color-text-secondary)" }}>Temperature:</span>
                 <strong style={{ color: "#38bdf8" }}>{testTemp.toFixed(1)} °C</strong>
@@ -703,10 +651,7 @@ export default function Insights() {
                 onChange={(e) => setTestTemp(parseFloat(e.target.value))}
                 style={{ width: "100%", accentColor: "#0ea5e9" }}
               />
-            </div>
-
-            {/* Hum slider */}
-            <div>
+            </div><div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                 <span style={{ color: "var(--color-text-secondary)" }}>Humidity:</span>
                 <strong style={{ color: "#34d399" }}>{testHum.toFixed(0)} % RH</strong>
@@ -720,10 +665,7 @@ export default function Insights() {
                 onChange={(e) => setTestHum(parseFloat(e.target.value))}
                 style={{ width: "100%", accentColor: "#34d399" }}
               />
-            </div>
-
-            {/* Press slider */}
-            <div>
+            </div><div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                 <span style={{ color: "var(--color-text-secondary)" }}>Pressure:</span>
                 <strong style={{ color: "#a78bfa" }}>{testPress.toFixed(0)} hPa</strong>

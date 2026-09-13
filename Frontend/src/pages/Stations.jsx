@@ -14,7 +14,6 @@ export default function Stations() {
   const [search, setSearch] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
 
-  // Extract all distinct cities from current readings
   const availableCities = useMemo(() => {
     const set = new Set();
     readings.forEach((r) => {
@@ -43,7 +42,6 @@ export default function Stations() {
     });
   }, [readings, search, selectedCity]);
 
-  // Group filtered stations by City
   const groupedByCity = useMemo(() => {
     const groups = {};
     for (const r of filtered) {
@@ -75,9 +73,7 @@ export default function Stations() {
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {/* Search */}
-            <div style={{ position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}><div style={{ position: "relative" }}>
               <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} />
               <input
                 type="text"
@@ -86,10 +82,7 @@ export default function Stations() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-            </div>
-
-            {/* View Switcher */}
-            <div className="sensor-tab-group">
+            </div><div className="sensor-tab-group">
               <button
                 className={`sensor-tab-btn ${viewMode === "grid" ? "sensor-tab-btn--active" : ""}`}
                 onClick={() => setViewMode("grid")}
@@ -106,10 +99,7 @@ export default function Stations() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* City Filter Tabs */}
-        {availableCities.length > 0 && (
+        </div>{availableCities.length > 0 && (
           <div className="filter-pill-group" style={{ alignSelf: "flex-start", flexWrap: "wrap" }}>
             <button
               className={`filter-pill ${selectedCity === "all" ? "filter-pill--active" : ""}`}
@@ -149,7 +139,6 @@ export default function Stations() {
             <span>No stations match the search filter for city "{selectedCity}".</span>
           </div>
         ) : (
-          /* Grouped by City Sections */
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             {cityEntries.map(([city, cityReadings]) => {
               const hasFault = cityReadings.some(

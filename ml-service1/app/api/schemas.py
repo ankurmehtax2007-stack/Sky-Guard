@@ -4,9 +4,6 @@ from datetime import datetime
 from typing import Any, Optional, List, Union
 from pydantic import BaseModel, Field
 
-# -------------------------------------------------------------
-# 1. Analyze Schemas
-# -------------------------------------------------------------
 class StationDetail(BaseModel):
     id: str = "DEMO-001"
     name: str = "Demo Weather Station"
@@ -72,9 +69,6 @@ class AnalyzeResponse(BaseModel):
     status: str = "success"
     analysis: AnalysisOutput
 
-# -------------------------------------------------------------
-# 2. Feedback Schemas
-# -------------------------------------------------------------
 class FeedbackRequestModel(BaseModel):
     analysis_id: Optional[str] = None
     station_id: str = "DEMO-001"
@@ -103,9 +97,6 @@ class FeedbackResponse(BaseModel):
     feedback: FeedbackRecord
     model_improvement: ModelImprovementRecord = Field(default_factory=ModelImprovementRecord)
 
-# -------------------------------------------------------------
-# Formatting Helpers
-# -------------------------------------------------------------
 def format_analysis_response(r: dict) -> dict:
     station_id = str(r.get("station_id") or "DEMO-001")
     station_name = str(r.get("station_name") or "Demo Weather Station")

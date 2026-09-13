@@ -22,7 +22,6 @@ export function useAnomalies() {
     setError(null);
 
     try {
-      // 1. Fetch official anomaly records directly from backend
       const res = await getAnomalies({ limit: 100 });
       if (res?.data?.anomalies) {
         const serverAnomalies = res.data.anomalies.filter(
@@ -33,7 +32,6 @@ export function useAnomalies() {
         saveAnomaliesToStorage(serverAnomalies);
       }
     } catch (err) {
-      // Fall back to local cached storage if backend is unreachable
       const cached = loadSavedAnomalies().filter((a) => !a.stationId || ACTIVE_STATION_IDS.includes(a.stationId));
       if (cached.length > 0) {
         setData(cached);
@@ -70,7 +68,6 @@ export function useStationAnomalies(stationId) {
       const merged = mergeAnomalies(saved, serverAnomalies);
       setData(merged);
     } catch (err) {
-      // If server query failed, rely on saved local anomalies
       const saved = loadSavedAnomalies().filter((a) => a.stationId === stationId);
       if (saved.length > 0) {
         setData(saved);
@@ -108,7 +105,6 @@ export function useAnomalyDetail(anomalyId) {
         setData(res.data);
       }
     } catch {
-      // If server fetch fails, fallback to local saved record
       const saved = loadSavedAnomalies();
       const match = saved.find((a) => a._id === anomalyId);
       if (match) {
@@ -130,7 +126,6 @@ export function useAnomalyDetail(anomalyId) {
       setUpdating(true);
       setUpdateError(null);
 
-      // Optimistically update local state & storage
       setData((prev) => {
         if (!prev) return prev;
         const updated = {
@@ -148,7 +143,6 @@ export function useAnomalyDetail(anomalyId) {
       try {
         await updateAnomalyStatus(anomalyId, status);
       } catch {
-        // Even if server status patch fails, local status remains updated
       } finally {
         setUpdating(false);
       }

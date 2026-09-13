@@ -7,7 +7,6 @@ export function NotificationToast() {
   const [toasts, setToasts] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // Sync with localStorage sound preference
   useEffect(() => {
     const pref = localStorage.getItem("skyguard_audio_alert");
     if (pref === "true") setSoundEnabled(true);
@@ -30,12 +29,10 @@ export function NotificationToast() {
 
       setToasts((prev) => [newToast, ...prev.slice(0, 3)]); // Keep at most 4 toasts
 
-      // Play audio alert if enabled
       if (localStorage.getItem("skyguard_audio_alert") === "true") {
         playAlertSound(a.severity);
       }
 
-      // Auto-dismiss after 6 seconds
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
       }, 6000);

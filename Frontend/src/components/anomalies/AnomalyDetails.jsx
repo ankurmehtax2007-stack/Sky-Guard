@@ -88,9 +88,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
   const confidencePct = data.confidence !== undefined ? Math.round(Number(data.confidence) * 100) : 95;
 
   return (
-    <div className="anomaly-detail">
-      {/* Top Banner with Severity & Station */}
-      <div
+    <div className="anomaly-detail"><div
         style={{
           display: "flex",
           alignItems: "center",
@@ -121,10 +119,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
           <AnomalyBadge severity={data.severity} />
           <AnomalyStatusBadge status={data.status} />
         </div>
-      </div>
-
-      {/* Grid of Key Telemetry Properties */}
-      <div className="detail-section">
+      </div><div className="detail-section">
         <h3 className="detail-section-title">Telemetry &amp; Diagnosis Data</h3>
         <div className="detail-grid">
           <DetailRow label="Station ID" value={data.stationId} />
@@ -174,10 +169,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
             <DetailRow label="Resolved Operator" value={data.resolvedBy} />
           )}
         </div>
-      </div>
-
-      {/* AI Message / Explanation */}
-      {data.message && (
+      </div>{data.message && (
         <div className="detail-section">
           <h3 className="detail-section-title">
             <Cpu size={12} style={{ display: "inline", marginRight: "4px" }} />
@@ -185,10 +177,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
           </h3>
           <p className="detail-message">{data.message}</p>
         </div>
-      )}
-
-      {/* Recommended Action */}
-      {data.action && (
+      )}{data.action && (
         <div className="detail-section">
           <h3 className="detail-section-title">
             <CheckCircle2 size={12} style={{ display: "inline", marginRight: "4px" }} />
@@ -201,10 +190,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
             {data.action}
           </div>
         </div>
-      )}
-
-      {/* On-Demand LLM Diagnostic Section (Only runs when clicked) */}
-      <div className="detail-section">
+      )}<div className="detail-section">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
           <h3 className="detail-section-title" style={{ margin: 0 }}>
             <Sparkles size={12} style={{ display: "inline", marginRight: "4px", color: "#818cf8" }} />
@@ -256,9 +242,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
         )}
 
         {llmReport && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {/* AI Recommendations */}
-            {llmReport.ai_recommendations?.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>{llmReport.ai_recommendations?.length > 0 && (
               <div
                 style={{
                   padding: "12px",
@@ -277,10 +261,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
                   ))}
                 </ul>
               </div>
-            )}
-
-            {/* LLM Briefing Body */}
-            <div
+            )}<div
               style={{
                 backgroundColor: "rgba(10, 15, 29, 0.85)",
                 border: "1px solid rgba(148, 163, 184, 0.12)",
@@ -296,10 +277,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Navigation to Station */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      </div><div style={{ display: "flex", justifyContent: "flex-end" }}>
         <Link
           to={`/stations/${data.stationId}`}
           className="btn btn-secondary btn-sm"
@@ -308,10 +286,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
           <span>Inspect {data.stationId} Full Readings</span>
           <ArrowRight size={13} />
         </Link>
-      </div>
-
-      {/* Status Transition Action Buttons */}
-      {nextStatuses.length > 0 && (
+      </div>{nextStatuses.length > 0 && (
         <div className="detail-section">
           <h3 className="detail-section-title">Remediation Workflow</h3>
           {updateError && <InlineError message={updateError} />}

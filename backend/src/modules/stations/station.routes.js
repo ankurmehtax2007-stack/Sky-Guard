@@ -6,13 +6,11 @@ import { findAllStations, findStationById, createStation } from "./station.repos
 
 const stationRoutes = Router();
 
-// GET /api/stations -> Role & Station Scoped retrieval
 stationRoutes.get("/", authenticateUser, authorize(PERMISSIONS.STATIONS_READ), async (req, res) => {
     try {
         const userRole = (req.user?.role || "").toLowerCase();
         const userStatus = (req.user?.status || "PENDING").toUpperCase();
 
-        // 1. Suspended accounts cannot access stations
         if (userRole !== "admin" && userStatus === "SUSPENDED") {
             return res.status(403).json({
                 message: "Forbidden: Account is suspended",
@@ -20,7 +18,6 @@ stationRoutes.get("/", authenticateUser, authorize(PERMISSIONS.STATIONS_READ), a
             });
         }
 
-        // 2. Pending accounts receive an empty list indicating station assignment is pending
         if (userRole !== "admin" && userStatus === "PENDING") {
             return res.status(200).json({
                 message: "Station assignment pending",
@@ -28,7 +25,6 @@ stationRoutes.get("/", authenticateUser, authorize(PERMISSIONS.STATIONS_READ), a
             });
         }
 
-        // 3. Admin receives all stations
         if (userRole === "admin") {
             const allStations = await findAllStations();
             return res.status(200).json({
@@ -37,7 +33,6 @@ stationRoutes.get("/", authenticateUser, authorize(PERMISSIONS.STATIONS_READ), a
             });
         }
 
-        // 4. Non-admin receives ONLY their assigned station
         if (!req.user.stationId) {
             return res.status(200).json({
                 message: "No station assigned",
@@ -57,7 +52,6 @@ stationRoutes.get("/", authenticateUser, authorize(PERMISSIONS.STATIONS_READ), a
     }
 });
 
-// GET /api/stations/:stationId -> Protected Station Details
 stationRoutes.get(
     "/:stationId",
     authenticateUser,
@@ -80,7 +74,6 @@ stationRoutes.get(
     }
 );
 
-// POST /api/stations -> ADMIN, ENGINEER (stations:create)
 stationRoutes.post("/", authenticateUser, authorize(PERMISSIONS.STATIONS_CREATE), async (req, res) => {
     try {
         const { id, name, location, status } = req.body;

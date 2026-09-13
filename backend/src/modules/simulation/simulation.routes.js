@@ -5,7 +5,6 @@ import { PERMISSIONS } from "../../auth/rbac/permissions.js";
 
 const simulationRoutes = Router();
 
-// POST /api/simulation/anomaly -> ADMIN, ENGINEER (simulation:run)
 simulationRoutes.post(
     "/anomaly",
     authenticateUser,

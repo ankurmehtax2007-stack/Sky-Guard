@@ -24,7 +24,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle token expiration and automatic refresh
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -44,7 +43,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Do not attempt refresh on auth endpoints (login, register, refresh)
     const isAuthEndpoint =
       originalRequest?.url?.includes("/api/auth/login") ||
       originalRequest?.url?.includes("/api/auth/register") ||

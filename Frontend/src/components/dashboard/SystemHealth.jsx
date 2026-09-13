@@ -7,7 +7,6 @@ export function SystemHealth() {
   const isHealthy = data?.status === "healthy" || !error;
   const services = data?.services ?? {};
 
-  // Standard services checklist
   const serviceList = [
     { key: "ingestion", label: "Data Ingestion", status: services.ingestion?.status || "healthy" },
     { key: "detection", label: "Anomaly Detection", status: services.detection?.status || "healthy" },
@@ -19,7 +18,6 @@ export function SystemHealth() {
   const operationalCount = serviceList.filter((s) => s.status === "healthy").length;
   const uptimePct = Math.round((operationalCount / serviceList.length) * 100);
 
-  // Donut circumference for stroke-dasharray (radius 46 -> circumference 289)
   const radius = 46;
   const circumference = 2 * Math.PI * radius;
   const strokeOffset = circumference - (circumference * uptimePct) / 100;
@@ -38,9 +36,7 @@ export function SystemHealth() {
         </span>
       </div>
 
-      <div className="system-health-body">
-        {/* Circular Donut Ring */}
-        <div className="system-health-donut-wrap">
+      <div className="system-health-body"><div className="system-health-donut-wrap">
           <svg width="128" height="128" viewBox="0 0 128 128" className="system-health-donut-svg">
             <defs>
               <linearGradient id="healthEmeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -51,18 +47,14 @@ export function SystemHealth() {
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
-            </defs>
-            {/* Background Track */}
-            <circle
+            </defs><circle
               cx="64"
               cy="64"
               r={radius}
               stroke="#f1f5f9"
               strokeWidth="11"
               fill="none"
-            />
-            {/* Progress Stroke */}
-            <circle
+            /><circle
               cx="64"
               cy="64"
               r={radius}
@@ -80,10 +72,7 @@ export function SystemHealth() {
             <span className="system-health-donut-pct">{uptimePct}%</span>
             <span className="system-health-donut-label">Uptime</span>
           </div>
-        </div>
-
-        {/* Services Checklist */}
-        <div className="system-health-services-list">
+        </div><div className="system-health-services-list">
           {serviceList.map((srv) => {
             const ok = srv.status === "healthy";
             return (

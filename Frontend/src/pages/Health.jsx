@@ -56,10 +56,7 @@ export function Health() {
           </div>
         </div>
 
-        <SystemHealth />
-
-        {/* SIH Distributed Pipeline Architecture Diagram */}
-        <div className="card">
+        <SystemHealth /><div className="card">
           <div className="card-header">
             <h3 className="card-title">SkyGuard Distributed Telemetry &amp; AI Pipeline</h3>
             <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>Real-Time Data Flow</span>

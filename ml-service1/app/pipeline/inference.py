@@ -133,7 +133,6 @@ def run_pipeline(records, iso_model, xgb_model, metadata, generate_llm=None):
             'maintenance': maint
         }
 
-        # Check if record or caller requested LLM report generation
         rec_gen = r.get('generate_report', r.get('generate_llm', generate_llm))
         is_anom = (d['decision'] != 'normal') or (d['root_cause'] != 'normal')
 

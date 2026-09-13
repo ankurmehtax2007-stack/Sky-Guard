@@ -13,7 +13,6 @@ function isOnline(reading) {
 export function StationOverviewTable() {
   const { data: readings, loading } = useRealtimeReadings();
 
-  // Show primary AWS fleet stations
   const displayStations = readings.length > 0 ? readings.slice(0, 6) : [
     { stationId: "AWS_01", temperature: 26.3, humidity: 67.6, pressure: 1007.3, timestamp: new Date().toISOString() },
     { stationId: "AWS_02", temperature: 27.1, humidity: 64.2, pressure: 1008.9, timestamp: new Date().toISOString() },

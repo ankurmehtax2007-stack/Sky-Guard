@@ -1,6 +1,4 @@
-// external modules import
 import mqtt from "mqtt";
-// local modules import
 import handleReading from "../modules/readings/reading.handler.js";
 import config from "../config/config.js";
 import logger from "../utils/logger.js";

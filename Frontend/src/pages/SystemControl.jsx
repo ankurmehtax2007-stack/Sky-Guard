@@ -28,23 +28,19 @@ export default function SystemControl() {
   const [isInjecting, setIsInjecting] = useState(false);
   const [showInjectModal, setShowInjectModal] = useState(false);
 
-  // Injection Form State
   const [injectStation, setInjectStation] = useState("AWS_01");
   const [injectType, setInjectType] = useState("temperature_spike");
   const [injectDuration, setInjectDuration] = useState(3);
   const [injectIntensity, setInjectIntensity] = useState("High");
   const [injectSuccessMsg, setInjectSuccessMsg] = useState("");
 
-  // Check backend and ML status
   useEffect(() => {
     let mounted = true;
 
-    // Check ML FastAPI service
     fetch("http://localhost:8000/docs", { method: "HEAD", mode: "no-cors" })
       .then(() => mounted && setMlStatus("connected"))
       .catch(() => mounted && setMlStatus("connected")); // no-cors resolves
 
-    // Check backend REST
     fetch("/api/readings")
       .then((res) => {
         if (mounted) setMongoStatus(res.ok ? "connected" : "degraded");
@@ -56,7 +52,6 @@ export default function SystemControl() {
     };
   }, []);
 
-  // Handle clear buffers
   const handleClearBuffers = () => {
     if (window.confirm("Are you sure you want to clear local telemetry anomaly buffers?")) {
       saveAnomaliesToStorage([]);
@@ -64,7 +59,6 @@ export default function SystemControl() {
     }
   };
 
-  // Handle inject anomaly simulation
   const handleInject = () => {
     setIsInjecting(true);
     setInjectSuccessMsg("");
@@ -81,9 +75,7 @@ export default function SystemControl() {
 
   return (
     <AppLayout pageTitle="System &amp; Infrastructure">
-      <div className="page-stack">
-        {/* Header */}
-        <div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
+      <div className="page-stack"><div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
@@ -125,10 +117,7 @@ export default function SystemControl() {
               <span>Inject Anomaly</span>
             </button>
           </div>
-        </div>
-
-        {/* Success Alert Banner */}
-        {injectSuccessMsg && (
+        </div>{injectSuccessMsg && (
           <div
             style={{
               padding: "14px 18px",
@@ -145,12 +134,7 @@ export default function SystemControl() {
             <CheckCircle2 size={16} />
             <span>{injectSuccessMsg}</span>
           </div>
-        )}
-
-        {/* ── Infrastructure Connection Health Cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
-          {/* MongoDB */}
-          <div className="card" style={{ padding: "20px" }}>
+        )}<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}><div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Database size={18} color="#34d399" />
@@ -166,10 +150,7 @@ export default function SystemControl() {
             <div style={{ fontSize: "11px", color: "var(--color-text-muted)", marginTop: "4px" }}>
               Cluster: <strong>Atlas Cloud</strong> • Latency: <strong>~24ms</strong>
             </div>
-          </div>
-
-          {/* MQTT Broker */}
-          <div className="card" style={{ padding: "20px" }}>
+          </div><div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Radio size={18} color="#0ea5e9" />
@@ -183,10 +164,7 @@ export default function SystemControl() {
             <div style={{ fontSize: "11px", color: "var(--color-text-muted)", marginTop: "4px" }}>
               Fleet: <strong>AWS_01, AWS_02, AWS_03</strong> • Cadence: <strong>10s</strong>
             </div>
-          </div>
-
-          {/* FastAPI ML Engine */}
-          <div className="card" style={{ padding: "20px" }}>
+          </div><div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Cpu size={18} color="#a855f7" />
@@ -200,10 +178,7 @@ export default function SystemControl() {
             <div style={{ fontSize: "11px", color: "var(--color-text-muted)", marginTop: "4px" }}>
               Explainability: <strong>SHAP Trees</strong> • LLM: <strong>Mistral 7B</strong>
             </div>
-          </div>
-
-          {/* WebSocket Channel */}
-          <div className="card" style={{ padding: "20px" }}>
+          </div><div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Activity size={18} color="#f59e0b" />
@@ -220,10 +195,7 @@ export default function SystemControl() {
               Real-time events: <strong>READING_UPDATED, ANOMALY_DETECTED</strong>
             </div>
           </div>
-        </div>
-
-        {/* ── Simulator Control Panel ── */}
-        <div className="card" style={{ padding: "24px" }}>
+        </div><div className="card" style={{ padding: "24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <Sliders size={20} color="#0ea5e9" />
@@ -286,10 +258,7 @@ export default function SystemControl() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* ── Modal for Anomaly Injection ── */}
-      {showInjectModal && (
+      </div>{showInjectModal && (
         <div
           style={{
             position: "fixed",
@@ -329,9 +298,7 @@ export default function SystemControl() {
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Target Station */}
-              <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}><div>
                 <label style={{ display: "block", fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "6px" }}>
                   Target Station Node:
                 </label>
@@ -354,10 +321,7 @@ export default function SystemControl() {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              {/* Anomaly Category */}
-              <div>
+              </div><div>
                 <label style={{ display: "block", fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "6px" }}>
                   Anomaly Type / Signature:
                 </label>
@@ -383,10 +347,7 @@ export default function SystemControl() {
                   <option value="multivariate_inconsistency">Multivariate Inconsistency (High Heat + High Humidity)</option>
                   <option value="spatial_inconsistency">Spatial Inconsistency (Cluster deviation)</option>
                 </select>
-              </div>
-
-              {/* Duration */}
-              <div>
+              </div><div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                   <span style={{ color: "var(--color-text-secondary)" }}>Duration (Cycles):</span>
                   <strong style={{ color: "#38bdf8" }}>{injectDuration} packets ({injectDuration * 10}s)</strong>
@@ -399,10 +360,7 @@ export default function SystemControl() {
                   onChange={(e) => setInjectDuration(parseInt(e.target.value))}
                   style={{ width: "100%", accentColor: "#ef4444" }}
                 />
-              </div>
-
-              {/* Intensity */}
-              <div>
+              </div><div>
                 <label style={{ display: "block", fontSize: "12px", color: "var(--color-text-secondary)", marginBottom: "6px" }}>
                   Deviation Intensity:
                 </label>
@@ -423,10 +381,7 @@ export default function SystemControl() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+              </div><div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button
                   type="button"
                   className="btn btn-secondary"

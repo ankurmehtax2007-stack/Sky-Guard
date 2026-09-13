@@ -1,5 +1,4 @@
 import http from "http";
-// local modules import
 import app from "./app.js";
 import connectDB, { disconnectDB } from "./config/database.js";
 import connectMQTT, { stopMQTT } from "./mqtt/mqttClient.js";
@@ -21,6 +20,7 @@ const startServer = async () => {
     }
 };
 
+// Start retry workers.
 startMLRetryWorker();
 startAnomalyRetryWorker();
 

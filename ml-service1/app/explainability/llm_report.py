@@ -5,7 +5,6 @@ from typing import Any
 import requests
 from dotenv import load_dotenv
 
-# Search and load .env from module hierarchy or working directory
 _cur = Path(__file__).resolve()
 for _dir in [_cur.parent, *_cur.parents, Path.cwd(), *Path.cwd().parents]:
     _env_candidate = _dir / '.env'
@@ -182,14 +181,12 @@ def generate_ai_report(
     generate_report: Any = None,
     only_on_anomaly: bool = True
 ) -> dict[str, Any]:
-    # 0. Check whether report generation is enabled/desired
     if generate_report is None:
         env_val = os.getenv('ENABLE_LLM_REPORT', 'true').strip().lower()
         should_generate = env_val in ('true', '1', 'yes')
     else:
         should_generate = bool(generate_report)
 
-    # Check whether the diagnostic represents an anomaly
     decision = str(diagnostic.get('decision') or (diagnostic.get('anomaly', {}).get('decision') if isinstance(diagnostic.get('anomaly'), dict) else '') or 'normal').lower()
     root_cause = str(diagnostic.get('root_cause') or (diagnostic.get('anomaly', {}).get('root_cause') if isinstance(diagnostic.get('anomaly'), dict) else '') or 'normal').lower()
     anom_detected = bool(diagnostic.get('anomaly', {}).get('detected', False)) if isinstance(diagnostic.get('anomaly'), dict) else False
@@ -202,11 +199,9 @@ def generate_ai_report(
     if not should_generate:
         return {"llm_report": "", "llm_source": "disabled", "ai_recommendations": ai_improvements}
 
-    # Only generate diagnostic report on anomaly if only_on_anomaly is active
     if only_on_anomaly and not is_anom:
         return {"llm_report": "", "llm_source": "skipped_nominal", "ai_recommendations": ai_improvements}
 
-    # 1. Try remote microservice if configured and accessible
     llm_url = os.getenv('LLM_SERVICE_URL', '').rstrip('/')
     if llm_url:
         try:
@@ -221,7 +216,6 @@ def generate_ai_report(
         except Exception:
             pass
 
-    # 2. Try direct Mistral AI API with structured evidence
     key = _resolve_key()
     if key and len(key) > 5:
         base = os.getenv('MISTRAL_BASE_URL', 'https://api.mistral.ai/v1').rstrip('/')
@@ -240,7 +234,6 @@ def generate_ai_report(
             "7. AI Recommendations for System Improvements"
         )
         
-        # Prepare structured input payload for LLM
         structured_summary = {
             "station": {
                 "id": diagnostic.get("station_id", "Unknown"),
@@ -300,7 +293,6 @@ def generate_ai_report(
         except Exception:
             pass
 
-    # 3. Deterministic Local Narrative Fallback
     local_rep = generate_local_narrative(diagnostic)
     return {
         "llm_report": local_rep,

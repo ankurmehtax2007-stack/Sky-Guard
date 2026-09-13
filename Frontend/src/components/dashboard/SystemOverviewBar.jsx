@@ -9,7 +9,6 @@ function isOnline(reading) {
   return Date.now() - new Date(reading.timestamp).getTime() < ONLINE_THRESHOLD_MS;
 }
 
-// Inline SVGs for Sparklines matching reference image
 function SparklineWave({ color, id }) {
   return (
     <svg width="56" height="24" viewBox="0 0 56 24" fill="none" className="overview-kpi-sparkline-svg">
@@ -136,7 +135,6 @@ export function SystemOverviewBar() {
 
   const activeAnomalies = anomalies.filter((a) => a.status === "pending").length;
 
-  // Calculate fleet averages
   const validTemps = readings.map((r) => r.temperature).filter((v) => typeof v === "number");
   const validHumidity = readings.map((r) => r.humidity).filter((v) => typeof v === "number");
   const validPressure = readings.map((r) => r.pressure).filter((v) => typeof v === "number");
@@ -153,16 +151,13 @@ export function SystemOverviewBar() {
     ? (validPressure.reduce((acc, v) => acc + v, 0) / validPressure.length).toFixed(0)
     : "1008";
 
-  // Dynamic anomaly rate calculation
   const anomalyDenominator = Math.max(1, activeReadingsCount || 100);
   const anomalyRate = activeAnomalies > 0
     ? Math.min(100, Math.round((activeAnomalies / anomalyDenominator) * 100))
     : 0;
 
   return (
-    <div className="overview-stats-grid" aria-label="System overview statistics">
-      {/* 1. Plant Stations */}
-      <StatBox
+    <div className="overview-stats-grid" aria-label="System overview statistics"><StatBox
         icon={Radio}
         title="Plant Stations"
         value={`${onlineStations} / ${totalStations}`}
@@ -171,10 +166,7 @@ export function SystemOverviewBar() {
         sub="Online"
         theme="blue"
         sparkline={<SparklineWave color="#0284c7" id="spark-plant" />}
-      />
-
-      {/* 2. Active Readings (Live Dynamic) */}
-      <StatBox
+      /><StatBox
         icon={Database}
         title="Active Readings"
         value={countLoading && activeReadingsCount === 0 ? "..." : activeReadingsCount.toLocaleString()}
@@ -185,10 +177,7 @@ export function SystemOverviewBar() {
         liveDot={readingsInLastMinute > 0}
         isPulsing={countPulsing}
         sparkline={<SparklineBars heights={barHeights} isPulsing={countPulsing} />}
-      />
-
-      {/* 3. Anomaly Rate */}
-      <StatBox
+      /><StatBox
         icon={AlertTriangle}
         title="Anomaly Rate"
         value={`${anomalyRate}%`}
@@ -197,10 +186,7 @@ export function SystemOverviewBar() {
         sub="Within normal range"
         theme="red"
         sparkline={<SparklineWave color="#ef4444" id="spark-anomaly" />}
-      />
-
-      {/* 4. Avg Temperature */}
-      <StatBox
+      /><StatBox
         icon={Thermometer}
         title="Avg Temperature"
         value={avgTemp}
@@ -210,10 +196,7 @@ export function SystemOverviewBar() {
         sub="Across active fleet"
         theme="purple"
         sparkline={<SparklineCurve color="#8b5cf6" id="spark-temp" />}
-      />
-
-      {/* 5. Avg Humidity */}
-      <StatBox
+      /><StatBox
         icon={Droplets}
         title="Avg Humidity"
         value={avgHum}
@@ -223,10 +206,7 @@ export function SystemOverviewBar() {
         sub="Across active fleet"
         theme="cyan"
         sparkline={<SparklineWave color="#2563eb" id="spark-hum" />}
-      />
-
-      {/* 6. Avg Pressure */}
-      <StatBox
+      /><StatBox
         icon={Gauge}
         title="Avg Pressure"
         value={avgPress}

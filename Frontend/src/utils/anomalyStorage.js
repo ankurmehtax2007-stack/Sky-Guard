@@ -14,11 +14,9 @@ export function loadSavedAnomalies() {
 export function saveAnomaliesToStorage(anomalies) {
   try {
     if (!Array.isArray(anomalies)) return;
-    // Cache latest anomalies for offline resilience
     const trimmed = anomalies.slice(0, 500);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
   } catch {
-    // Ignore storage quota errors
   }
 }
 
@@ -100,20 +98,17 @@ export function mergeAnomalies(existing = [], incoming = []) {
     if (item._id && !String(item._id).startsWith("read_") && !String(item._id).startsWith("anom_")) {
       return `id_${item._id}`;
     }
-    // Group identical station/sensor anomalies occurring within 15 seconds
     const timeVal = new Date(item.timestamp || item.detectedAt || 0).getTime();
     const windowSlot = Math.floor(timeVal / 15000);
     return `burst_${item.stationId || ""}_${item.sensor || ""}_${windowSlot}`;
   };
 
-  // Process existing
   for (const a of existing) {
     if (!a) continue;
     const key = getDedupeKey(a);
     if (key) map.set(key, a);
   }
 
-  // Process incoming, overwriting matching key with fresher data
   for (const b of incoming) {
     if (!b) continue;
     const key = getDedupeKey(b);

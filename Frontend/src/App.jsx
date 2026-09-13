@@ -30,10 +30,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/overview" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/login" element={<Login />} />
-
-          {/* Protected Mission Control Routes */}
-          <Route
+          <Route path="/login" element={<Login />} /><Route
             path="/dashboard"
             element={
               <ProtectedRoute>
@@ -113,10 +110,7 @@ export default function App() {
                 <SystemControl />
               </ProtectedRoute>
             }
-          />
-
-          {/* Admin Restricted Route */}
-          <Route
+          /><Route
             path="/users"
             element={
               <ProtectedRoute requireAdmin={true}>

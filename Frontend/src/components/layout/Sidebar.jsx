@@ -98,7 +98,6 @@ export function Sidebar({ isOpen, onClose }) {
   const isHealthy = healthData?.status === "healthy";
   const statusKnown = healthData !== null;
 
-  // Active anomaly count (pending/critical triage incidents) or fallback to 3
   const criticalCount = anomaliesData?.filter((a) => a.status === "pending" && a.severity === "critical").length ?? 0;
   const pendingCount = anomaliesData?.filter((a) => a.status === "pending").length ?? 0;
   const rawBadgeCount = criticalCount > 0 ? criticalCount : (pendingCount > 0 ? pendingCount : 3);
@@ -119,9 +118,7 @@ export function Sidebar({ isOpen, onClose }) {
   return (
     <>
       {isOpen && <div className="sidebar-backdrop" onClick={onClose} />}
-      <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
-        {/* Brand Header */}
-        <div className="sidebar-header">
+      <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}><div className="sidebar-header">
           <div className="sidebar-brand-icon-wrap">
             <svg
               width="36"
@@ -168,10 +165,7 @@ export function Sidebar({ isOpen, onClose }) {
               Smarter Skies. Safer Tomorrow.
             </div>
           </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="sidebar-nav">
+        </div><nav className="sidebar-nav">
           {NAV_SECTIONS.map((section, idx) => (
             <div
               key={idx}
@@ -192,10 +186,7 @@ export function Sidebar({ isOpen, onClose }) {
               ))}
             </div>
           ))}
-        </nav>
-
-        {/* User Account Bar */}
-        {user && (
+        </nav>{user && (
           <div
             style={{
               margin: "10px 14px 4px 14px",
@@ -289,20 +280,14 @@ export function Sidebar({ isOpen, onClose }) {
               <LogOut size={14} />
             </button>
           </div>
-        )}
-
-        {/* Bottom Quote Box */}
-        <div className="sidebar-quote-card">
+        )}<div className="sidebar-quote-card">
           <div className="sidebar-quote-card-text">
             &ldquo;Turning<br />Weather Data<br />into a Safer<br />Tomorrow.&rdquo;
           </div>
           <div className="sidebar-quote-card-bar" />
         </div>
 
-        <div className="sidebar-footer-divider" />
-
-        {/* System status footer */}
-        <div className="sidebar-system-status">
+        <div className="sidebar-footer-divider" /><div className="sidebar-system-status">
           <ShieldCheck size={22} strokeWidth={1.75} className="sidebar-status-shield" />
           <div className="sidebar-status-info">
             <span className="sidebar-status-version">v1.0.0</span>

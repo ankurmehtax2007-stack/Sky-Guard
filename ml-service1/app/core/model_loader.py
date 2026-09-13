@@ -120,25 +120,21 @@ def _build_fresh_models(feature_cols, num_classes=10):
     X = rng.normal(0, 1, (n_samples, n))
     y = np.zeros(n_samples, dtype=int)
 
-    # Class 0: Normal
     X[:700, 2] = rng.normal(28.5, 5.0, 700)
     X[:700, 3] = rng.uniform(35.0, 75.0, 700)
     X[:700, 4] = rng.normal(1008.0, 5.0, 700)
     y[:700] = 0
 
-    # Class 1: Temperature Spike
     X[700:800, 2] = rng.uniform(49.0, 62.0, 100)
     X[700:800, 3] = rng.uniform(15.0, 40.0, 100)
     X[700:800, 4] = rng.normal(1005.0, 5.0, 100)
     y[700:800] = 1
 
-    # Class 2: Humidity Spike
     X[800:900, 2] = rng.normal(28.0, 4.0, 100)
     X[800:900, 3] = rng.uniform(98.0, 100.0, 100)
     X[800:900, 4] = rng.normal(1008.0, 5.0, 100)
     y[800:900] = 2
 
-    # Class 3: Pressure Jump
     X[900:1000, 2] = rng.normal(28.0, 4.0, 100)
     X[900:1000, 3] = rng.uniform(40.0, 70.0, 100)
     X[900:1000, 4] = rng.uniform(880.0, 930.0, 100)
@@ -209,14 +205,10 @@ def load_artifacts():
     if xgb_path.exists():
         try:
             xgb = joblib.load(xgb_path)
-            # The serialised model may have feature names with trailing whitespace
-            # (artefact of how the training DataFrame columns were named).
-            # Strip them so they match the clean names produced by feature_engineering.py.
             if hasattr(xgb, 'feature_names_in_'):
                 xgb.feature_names_in_ = np.array(
                     [f.strip() for f in xgb.feature_names_in_], dtype=object
                 )
-            # XGBoost booster internal feature names
             try:
                 booster = xgb.get_booster()
                 booster.feature_names = [f.strip() for f in booster.feature_names]

@@ -13,7 +13,6 @@ const generateReading = (station) => {
         };
     }
 
-    // Continuous smooth physical diurnal drift + realistic micro-variations
     state.step += 0.05;
     const diurnalTemp = Math.sin(state.step) * 2.5; // Natural smooth curve (±2.5°C)
     const diurnalHum = -Math.sin(state.step) * 3.5; // Humidity naturally mirrors temperature

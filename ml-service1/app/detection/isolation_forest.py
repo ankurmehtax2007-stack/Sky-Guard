@@ -11,7 +11,6 @@ def score(model, X):
         else:
             return np.zeros(len(X), dtype=float)
 
-        # Sigmoid calibration: raw > 0 is normal, raw < 0 is anomaly
         calibrated = 1.0 / (1.0 + np.exp(8.0 * raw))
         return np.clip(np.nan_to_num(calibrated, nan=0.1), 0.0, 1.0)
     except Exception:
