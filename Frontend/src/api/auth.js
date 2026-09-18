@@ -2,14 +2,6 @@ import api from "./axios";
 
 export const registerUser = async (userData) => {
   const response = await api.post("/api/auth/register", userData);
-
-  if (response.data.accessToken) {
-    localStorage.setItem("accessToken", response.data.accessToken);
-  }
-  if (response.data.user) {
-    localStorage.setItem("user", JSON.stringify(response.data.user));
-  }
-
   return response.data;
 };
 
@@ -19,55 +11,53 @@ export const loginUser = async (credentials) => {
   if (response.data.accessToken) {
     localStorage.setItem("accessToken", response.data.accessToken);
   }
-  if (response.data.user) {
-    localStorage.setItem("user", JSON.stringify(response.data.user));
-  }
 
   return response.data;
 };
 
 export const logoutUser = async () => {
+  const response = await api.post("/api/auth/logout");
+
+  localStorage.removeItem("accessToken");
+
+  return response.data;
+};
+
+
+export const createUser = async (userData) => {
   try {
-    const response = await api.post("/api/auth/logout");
+    console.log("Creating user:", userData);
+
+    const response = await api.post("/api/users", userData);
+
+    console.log("Create user response:", response.data);
+
     return response.data;
-  } finally {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-  }
-};
+  } catch (error) {
+    console.error("Create user failed:", error);
+    console.error("Status:", error?.response?.status);
+    console.error("Response:", error?.response?.data);
 
-export const getMe = async () => {
-  const response = await api.get("/api/auth/me");
-  return response.data;
-};
-
-export const refreshToken = async () => {
-  const response = await api.post("/api/auth/refresh");
-  if (response.data.accessToken) {
-    localStorage.setItem("accessToken", response.data.accessToken);
+    throw error;
   }
-  if (response.data.user) {
-    localStorage.setItem("user", JSON.stringify(response.data.user));
-  }
-  return response.data;
 };
 
 export const getAllUsers = async () => {
-  const response = await api.get("/api/auth");
+  const response = await api.get("/api/users");
   return response.data;
 };
 
 export const getUserById = async (id) => {
-  const response = await api.get(`/api/auth/${id}`);
+  const response = await api.get(`/api/users/${id}`);
   return response.data;
 };
 
 export const updateUser = async (id, userData) => {
-  const response = await api.put(`/api/auth/${id}`, userData);
+  const response = await api.put(`/api/users/${id}`, userData);
   return response.data;
 };
 
 export const deleteUser = async (id) => {
-  const response = await api.delete(`/api/auth/${id}`);
+  const response = await api.delete(`/api/users/${id}`);
   return response.data;
 };

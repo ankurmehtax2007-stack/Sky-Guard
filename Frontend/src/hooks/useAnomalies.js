@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { getAnomalies, getStationAnomalies, getAnomalyById, updateAnomalyStatus } from "../api/anomalies";
 import { getLatestReadings } from "../api/reading";
 import { parseApiError } from "../utils/formatters";
-import { ACTIVE_STATION_IDS } from "../utils/constants";
+import { ACTIVE_STATION_IDS, getStationCity } from "../utils/constants";
+import { useCityScope } from "../context/CityScope";
 import {
   loadSavedAnomalies,
   saveAnomaliesToStorage,
@@ -11,28 +12,35 @@ import {
 } from "../utils/anomalyStorage";
 
 export function useAnomalies() {
-  const [data, setData] = useState(() =>
-    loadSavedAnomalies().filter((a) => !a.stationId || ACTIVE_STATION_IDS.includes(a.stationId))
-  );
+  const { city } = useCityScope();
+  const [data, setData] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetch = useCallback(async () => {
+    setLoading(true);
     setError(null);
 
     try {
+      // 1. Fetch official anomaly records directly from backend
       const res = await getAnomalies({ limit: 100 });
       if (res?.data?.anomalies) {
         const serverAnomalies = res.data.anomalies.filter(
-          (a) => !a.stationId || ACTIVE_STATION_IDS.includes(a.stationId)
+          (a) =>
+            (!a.stationId || ACTIVE_STATION_IDS.includes(a.stationId)) &&
+            (city === "All Cities" || getStationCity(a).toLowerCase() === city.toLowerCase())
         );
         setData(serverAnomalies);
         setPagination(res.data?.pagination ?? null);
         saveAnomaliesToStorage(serverAnomalies);
       }
     } catch (err) {
-      const cached = loadSavedAnomalies().filter((a) => !a.stationId || ACTIVE_STATION_IDS.includes(a.stationId));
+      // Fall back to local cached storage if backend is unreachable
+      const cached = loadSavedAnomalies().filter((a) =>
+        (!a.stationId || ACTIVE_STATION_IDS.includes(a.stationId)) &&
+        (city === "All Cities" || getStationCity(a).toLowerCase() === city.toLowerCase())
+      );
       if (cached.length > 0) {
         setData(cached);
       } else {
@@ -41,7 +49,7 @@ export function useAnomalies() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [city]);
 
   useEffect(() => {
     fetch();
@@ -68,6 +76,7 @@ export function useStationAnomalies(stationId) {
       const merged = mergeAnomalies(saved, serverAnomalies);
       setData(merged);
     } catch (err) {
+      // If server query failed, rely on saved local anomalies
       const saved = loadSavedAnomalies().filter((a) => a.stationId === stationId);
       if (saved.length > 0) {
         setData(saved);
@@ -105,6 +114,7 @@ export function useAnomalyDetail(anomalyId) {
         setData(res.data);
       }
     } catch {
+      // If server fetch fails, fallback to local saved record
       const saved = loadSavedAnomalies();
       const match = saved.find((a) => a._id === anomalyId);
       if (match) {
@@ -126,6 +136,7 @@ export function useAnomalyDetail(anomalyId) {
       setUpdating(true);
       setUpdateError(null);
 
+      // Optimistically update local state & storage
       setData((prev) => {
         if (!prev) return prev;
         const updated = {
@@ -141,8 +152,16 @@ export function useAnomalyDetail(anomalyId) {
       });
 
       try {
-        await updateAnomalyStatus(anomalyId, status);
-      } catch {
+        const response = await updateAnomalyStatus(anomalyId, status);
+        // The server is authoritative. Use its returned anomaly when available.
+        if (response?.data) {
+          setData(response.data);
+          const all = loadSavedAnomalies();
+          saveAnomaliesToStorage(all.map((item) => item._id === anomalyId ? response.data : item));
+        }
+      } catch (err) {
+        setUpdateError(parseApiError(err));
+        throw err;
       } finally {
         setUpdating(false);
       }

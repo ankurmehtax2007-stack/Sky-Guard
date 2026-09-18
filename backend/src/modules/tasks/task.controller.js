@@ -7,6 +7,7 @@ import {
     getMyTasksService,
     getTaskService,
 } from "./task.service.js";
+import { findAllUsers } from "../../auth/user.repository.js";
 import logger from "../../utils/logger.js";
 
 export const createTask = async (req, res) => {
@@ -121,3 +122,20 @@ export const addNote = async (req, res) => {
         return res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
+
+export const getAssignableEngineers = async (req, res) => {
+    try {
+        const { stationId } = req.query;
+        const filter = { role: "engineer", status: "ACTIVE" };
+        if (stationId) filter.stationId = stationId;
+        const engineers = await findAllUsers(filter);
+        return res.status(200).json({
+            message: "Assignable engineers retrieved successfully",
+            engineers,
+        });
+    } catch (error) {
+        logger.error({ error }, "Error fetching assignable engineers");
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+

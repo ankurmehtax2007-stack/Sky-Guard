@@ -4,7 +4,6 @@ import { useRealtimeReadings } from "../hooks/useRealtimeData";
 import { ACTIVE_STATION_IDS, KNOWN_STATIONS } from "../utils/constants";
 import {
   BrainCircuit,
-  Sparkles,
   ShieldAlert,
   Activity,
   CheckCircle2,
@@ -18,8 +17,6 @@ import {
   FileText,
   ThumbsUp,
   ThumbsDown,
-  RotateCw,
-  Wrench,
   CheckCircle,
 } from "lucide-react";
 import {
@@ -41,9 +38,8 @@ export default function Insights() {
   const { data: readings } = useRealtimeReadings();
   const [selectedStationId, setSelectedStationId] = useState("AWS_01");
   const [feedbackSent, setFeedbackSent] = useState(null);
-  const [aiReportData, setAiReportData] = useState(null);
-  const [loadingReport, setLoadingReport] = useState(false);
 
+  // Interactive Sandbox State for Real-Time Inference
   const [testTemp, setTestTemp] = useState(48.5);
   const [testHum, setTestHum] = useState(25.0);
   const [testPress, setTestPress] = useState(955.0);
@@ -61,6 +57,7 @@ export default function Insights() {
     );
   }, [readings, selectedStationId]);
 
+  // Extract or synthesize ML diagnostic analysis
   const analysis = useMemo(() => {
     if (sandboxResult) return sandboxResult;
     const existing = currentReading?.anomalyPrediction?.analysis;
@@ -107,8 +104,6 @@ export default function Insights() {
           { feature: "temperature_c", shap_value: isTempAnom ? 2.45 : 0.12 },
           { feature: "humidity_pct", shap_value: isHumAnom ? 1.84 : -0.15 },
           { feature: "pressure_hpa", shap_value: isPressAnom ? 2.12 : -0.22 },
-          { feature: "spatial_cluster_diff", shap_value: 0.35 },
-          { feature: "temporal_rate_lag1", shap_value: 0.18 },
         ],
       },
       maintenance: {
@@ -120,14 +115,19 @@ export default function Insights() {
     };
   }, [currentReading, selectedStationId, sandboxResult]);
 
+  // Transform SHAP factors for BarChart
   const shapData = useMemo(() => {
     const factors = analysis?.explanation?.shap_factors || [];
-    return factors.map((f) => ({
-      name: f.feature.replace("_", " "),
-      impact: Number(f.shap_value.toFixed(2)),
-    }));
+    const allowed = new Set(["temperature_c", "humidity_pct", "pressure_hpa"]);
+    return factors
+      .filter((f) => allowed.has(f.feature))
+      .map((f) => ({
+        name: f.feature === "temperature_c" ? "Temperature" : f.feature === "humidity_pct" ? "Humidity" : "Pressure",
+        impact: Number(f.shap_value.toFixed(2)),
+      }));
   }, [analysis]);
 
+  // 5-Axis Multi-Source Evidence Radar Data
   const radarData = useMemo(() => {
     const ev = analysis?.evidence || {};
     return [
@@ -139,52 +139,7 @@ export default function Insights() {
     ];
   }, [analysis]);
 
-  const fetchAiReport = async (readingOverride) => {
-    const r = readingOverride || currentReading;
-    setLoadingReport(true);
-    try {
-      const res = await fetch("http://localhost:8000/api/generate-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          diagnostic: {
-            station_id: selectedStationId,
-            station_name: KNOWN_STATIONS[selectedStationId]?.name || "AWS Node",
-            city: KNOWN_STATIONS[selectedStationId]?.city || "Delhi",
-            cluster: selectedStationId === "AWS_01" ? "NCR" : selectedStationId === "AWS_02" ? "Konkan" : "South",
-            temperature_c: r.temperature,
-            humidity_pct: r.humidity,
-            pressure_hpa: r.pressure,
-            root_cause: analysis?.anomaly?.root_cause || "normal",
-            decision: analysis?.anomaly?.decision || "normal",
-            confidence: analysis?.anomaly?.confidence || 0.95,
-            severity: analysis?.anomaly?.severity || "NONE",
-            health_score: analysis?.health?.score || 100,
-            health_status: analysis?.health?.status || "GOOD",
-            fused_anomaly_score: analysis?.anomaly?.fused_anomaly_score || 0.0,
-            maintenance: {
-              recommended_action: analysis?.maintenance?.recommended_action || "Continue routine scheduled monitoring.",
-              engineering_priority: analysis?.maintenance?.priority || "Nominal"
-            },
-            shap_factors: analysis?.explanation?.shap_factors || []
-          }
-        })
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setAiReportData(json);
-      }
-    } catch (e) {
-      console.warn("Could not reach ML service for report:", e);
-    } finally {
-      setLoadingReport(false);
-    }
-  };
-
-  useEffect(() => {
-    setAiReportData(null);
-  }, [selectedStationId, sandboxResult]);
-
+  // Interactive Sandbox Simulation Handler
   const handleRunSimulation = async () => {
     setIsSimulating(true);
     try {
@@ -202,10 +157,10 @@ export default function Insights() {
         const json = await res.json();
         if (json.analysis) {
           setSandboxResult(json.analysis);
-          setAiReportData(null); // Keep LLM diagnosis on-demand until user clicks
         }
       }
     } catch {
+      // Fallback local synthetic calculation
       const isAnom = testTemp > 45 || testTemp < 5 || testHum > 90 || testPress < 960;
       setSandboxResult({
         station: { id: selectedStationId, name: KNOWN_STATIONS[selectedStationId]?.name || "Station" },
@@ -230,8 +185,6 @@ export default function Insights() {
             { feature: "temperature_c", shap_value: testTemp > 45 ? 2.82 : 0.1 },
             { feature: "humidity_pct", shap_value: testHum > 90 ? 2.15 : 0.05 },
             { feature: "pressure_hpa", shap_value: testPress < 960 ? 2.45 : -0.2 },
-            { feature: "spatial_diff", shap_value: 0.42 },
-            { feature: "rate_of_change", shap_value: 0.68 },
           ],
         },
         maintenance: {
@@ -247,9 +200,12 @@ export default function Insights() {
   };
 
   return (
-    <AppLayout pageTitle="Explainable AI &amp; LLM Insights">
-      <div className="page-stack"><div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
+    <AppLayout pageTitle="Explainable AI Insights">
+      <div className="page-stack">
+        {/* ── Header Controls & Station Selector ── */}
+        <div className="page-header-row" style={{ flexWrap: "wrap", gap: "16px" }}>
           <div>
+            <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
                 style={{
@@ -265,12 +221,16 @@ export default function Insights() {
               >
                 <BrainCircuit size={18} />
               </div>
-              <h2 className="page-heading">SkyGuard AI • Explainable AI &amp; LLM Diagnostics</h2>
+              <h2 className="page-heading">NIMbus • Explainable AI Diagnostics</h2>
             </div>
             <p className="page-description">
-              Multi-source 5-tier machine learning inference, SHAP attribution trees &amp; Mistral LLM root-cause briefings
+              Sensor anomaly inference and SHAP feature attribution for temperature, humidity, and pressure
             </p>
-          </div><div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            </div>
+          </div>
+
+          {/* Station Selector Pills */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "12px", color: "var(--color-text-muted)", fontWeight: 600 }}>Station:</span>
             <div className="sensor-tab-group">
               {ACTIVE_STATION_IDS.map((id) => (
@@ -287,13 +247,18 @@ export default function Insights() {
               ))}
             </div>
           </div>
-        </div><div
+        </div>
+
+        {/* ── Top KPI Stat Strip ── */}
+        <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "14px",
           }}
-        ><div className="stat-card">
+        >
+          {/* Fused Score */}
+          <div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Fused Anomaly Score</span>
               <Activity size={16} color="#0ea5e9" />
@@ -304,7 +269,10 @@ export default function Insights() {
             <span className="stat-card-subtext">
               Status: <strong>{analysis.anomaly.decision.toUpperCase()}</strong>
             </span>
-          </div><div className="stat-card">
+          </div>
+
+          {/* Diagnosed Condition */}
+          <div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Diagnosed Root Cause</span>
               <AlertTriangle size={16} color="#f59e0b" />
@@ -315,7 +283,10 @@ export default function Insights() {
             <span className="stat-card-subtext">
               Severity: <strong>{analysis.anomaly.severity}</strong> • Conf: {(analysis.anomaly.confidence * 100).toFixed(0)}%
             </span>
-          </div><div className="stat-card">
+          </div>
+
+          {/* Health Index */}
+          <div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Station Health Index</span>
               <ShieldAlert size={16} color="#6366f1" />
@@ -324,7 +295,10 @@ export default function Insights() {
               {analysis.health.score} / 100
             </div>
             <span className="stat-card-subtext">Rating: {analysis.health.status}</span>
-          </div><div className="stat-card">
+          </div>
+
+          {/* Active Model Stack */}
+          <div className="stat-card">
             <div className="stat-card-header">
               <span className="stat-card-title">Inference Engine</span>
               <Cpu size={16} color="#34d399" />
@@ -334,7 +308,12 @@ export default function Insights() {
             </div>
             <span className="stat-card-subtext">XGBoost &amp; Isolation Forest</span>
           </div>
-        </div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "20px" }}><div className="card" style={{ padding: "20px" }}>
+        </div>
+
+        {/* ── Main Diagnostics Grid ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "20px" }}>
+          {/* Left 1: SHAP Waterfall Attribution */}
+          <div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Layers size={16} color="#0ea5e9" />
@@ -375,7 +354,10 @@ export default function Insights() {
                 Stabilizing Factor (Lowers Risk)
               </span>
             </div>
-          </div><div className="card" style={{ padding: "20px" }}>
+          </div>
+
+          {/* Left 2: Multi-Source Evidence Radar */}
+          <div className="card" style={{ padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Activity size={16} color="#6366f1" />
@@ -413,211 +395,10 @@ export default function Insights() {
               Fused Decision: Temporal, Spatial, Isolation Forest, XGBoost and Thermodynamic consistency checks.
             </p>
           </div>
-        </div><div
-          className="card"
-          style={{
-            padding: "24px",
-            backgroundColor: "rgba(15, 23, 42, 0.75)",
-            border: "1px solid rgba(99, 102, 241, 0.25)",
-            position: "relative",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "8px",
-                  background: "rgba(99, 102, 241, 0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#818cf8",
-                }}
-              >
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#fff", margin: 0 }}>
-                  SkyGuard AI Diagnostic &amp; Improvement Briefing
-                </h3>
-                <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
-                  Station: <strong>{selectedStationId}</strong> ({KNOWN_STATIONS[selectedStationId]?.city || "Delhi"} - {KNOWN_STATIONS[selectedStationId]?.name || "AWS Node"}) • {aiReportData?.source ? `Source: ${aiReportData.source.toUpperCase()}` : "AI Pipeline"}
-                </span>
-              </div>
-            </div>
+        </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              {aiReportData ? (
-                <button
-                  className="btn btn-secondary btn-xs"
-                  onClick={() => fetchAiReport()}
-                  disabled={loadingReport}
-                  title="Re-run diagnostic analysis from ML Service"
-                  style={{ display: "flex", alignItems: "center", gap: "5px" }}
-                >
-                  <RotateCw size={12} className={loadingReport ? "spin" : ""} />
-                  <span>{loadingReport ? "Generating…" : "Re-run Diagnosis"}</span>
-                </button>
-              ) : (
-                <button
-                  className="btn btn-primary btn-xs"
-                  onClick={() => fetchAiReport()}
-                  disabled={loadingReport}
-                  style={{ display: "flex", alignItems: "center", gap: "5px" }}
-                >
-                  <Sparkles size={12} />
-                  <span>{loadingReport ? "Generating…" : "Check LLM Diagnosis"}</span>
-                </button>
-              )}
-
-              <span className={`badge ${analysis.anomaly.detected ? "badge-severity-high" : "badge-resolved"}`}>
-                {analysis.anomaly.detected ? "ACTION REQUIRED" : "NOMINAL TELEMETRY"}
-              </span>
-            </div>
-          </div>{aiReportData?.ai_recommendations && aiReportData.ai_recommendations.length > 0 && (
-            <div
-              style={{
-                marginBottom: "16px",
-                padding: "16px",
-                background: "linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(99, 102, 241, 0.08))",
-                border: "1px solid rgba(56, 189, 248, 0.3)",
-                borderRadius: "8px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                <Wrench size={16} style={{ color: "#38bdf8" }} />
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  AI Recommendations for Improvements
-                </span>
-                <span className="section-count" style={{ fontSize: "10px", borderColor: "rgba(56, 189, 248, 0.3)", color: "#38bdf8" }}>
-                  Explainability Engine
-                </span>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {aiReportData.ai_recommendations.map((rec, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "10px",
-                      fontSize: "12.5px",
-                      color: "#e2e8f0",
-                      lineHeight: 1.5,
-                      background: "rgba(15, 23, 42, 0.5)",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        background: "rgba(14, 165, 233, 0.25)",
-                        color: "#38bdf8",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginTop: "1px",
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span>{rec}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}<div
-            style={{
-              backgroundColor: "rgba(10, 15, 29, 0.85)",
-              border: "1px solid rgba(148, 163, 184, 0.12)",
-              borderRadius: "8px",
-              padding: "18px 20px",
-              fontSize: "13px",
-              lineHeight: 1.65,
-              color: "#cbd5e1",
-            }}
-          >
-            {loadingReport ? (
-              <div style={{ textAlign: "center", padding: "32px 16px" }}>
-                <RotateCw size={26} className="spin" style={{ color: "#818cf8", margin: "0 auto 12px" }} />
-                <div style={{ color: "#f8fafc", fontSize: "14px", fontWeight: 600 }}>
-                  Analyzing telemetry with LLM diagnostic model…
-                </div>
-                <div style={{ color: "#94a3b8", fontSize: "12px", marginTop: "4px" }}>
-                  Synthesizing physical failure mode explanation and remediation steps
-                </div>
-              </div>
-            ) : aiReportData?.llm_report ? (
-              <div style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-sans)", fontSize: "12.5px" }}>
-                {aiReportData.llm_report}
-              </div>
-            ) : (
-              <div style={{ textAlign: "center", padding: "32px 16px" }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "12px",
-                    background: "rgba(99, 102, 241, 0.15)",
-                    border: "1px solid rgba(99, 102, 241, 0.3)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 12px",
-                    color: "#818cf8",
-                  }}
-                >
-                  <Sparkles size={22} />
-                </div>
-                <h4 style={{ color: "#f8fafc", fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>
-                  On-Demand LLM Root-Cause Diagnosis
-                </h4>
-                <p style={{ color: "#94a3b8", fontSize: "13px", maxWidth: "540px", margin: "0 auto 16px", lineHeight: 1.5 }}>
-                  Click below to generate an AI failure-mode analysis, SHAP attribution insights, and engineering action plan for Station <strong>{selectedStationId}</strong>.
-                </p>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => fetchAiReport()}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
-                >
-                  <Sparkles size={14} />
-                  <span>Check LLM Diagnosis</span>
-                </button>
-              </div>
-            )}
-          </div><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px", flexWrap: "wrap", gap: "10px" }}>
-            <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-              {feedbackSent ? `Feedback recorded: "${feedbackSent}"` : "Was this automated diagnosis accurate?"}
-            </span>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setFeedbackSent("Confirmed Anomaly")}
-                style={{ display: "flex", alignItems: "center", gap: "6px" }}
-              >
-                <ThumbsUp size={13} color="#34d399" />
-                <span>Confirm Diagnosis</span>
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setFeedbackSent("Marked False Positive")}
-                style={{ display: "flex", alignItems: "center", gap: "6px" }}
-              >
-                <ThumbsDown size={13} color="#f87171" />
-                <span>Mark False Positive</span>
-              </button>
-            </div>
-          </div>
-        </div><div className="card" style={{ padding: "20px" }}>
+        {/* ── Interactive Sandbox: Run Real-Time ML Inference ── */}
+        <div className="card" style={{ padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Sliders size={16} color="#0ea5e9" />
@@ -637,7 +418,9 @@ export default function Insights() {
               gap: "16px",
               marginBottom: "16px",
             }}
-          ><div>
+          >
+            {/* Temp slider */}
+            <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                 <span style={{ color: "var(--color-text-secondary)" }}>Temperature:</span>
                 <strong style={{ color: "#38bdf8" }}>{testTemp.toFixed(1)} °C</strong>
@@ -651,7 +434,10 @@ export default function Insights() {
                 onChange={(e) => setTestTemp(parseFloat(e.target.value))}
                 style={{ width: "100%", accentColor: "#0ea5e9" }}
               />
-            </div><div>
+            </div>
+
+            {/* Hum slider */}
+            <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                 <span style={{ color: "var(--color-text-secondary)" }}>Humidity:</span>
                 <strong style={{ color: "#34d399" }}>{testHum.toFixed(0)} % RH</strong>
@@ -665,7 +451,10 @@ export default function Insights() {
                 onChange={(e) => setTestHum(parseFloat(e.target.value))}
                 style={{ width: "100%", accentColor: "#34d399" }}
               />
-            </div><div>
+            </div>
+
+            {/* Press slider */}
+            <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
                 <span style={{ color: "var(--color-text-secondary)" }}>Pressure:</span>
                 <strong style={{ color: "#a78bfa" }}>{testPress.toFixed(0)} hPa</strong>

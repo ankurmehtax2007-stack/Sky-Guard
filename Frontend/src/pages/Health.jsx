@@ -36,7 +36,7 @@ export function Health() {
           <div>
             <h2 className="page-heading">Infrastructure Health &amp; Pipeline Architecture</h2>
             <p className="page-description">
-              End-to-end distributed system monitoring for Smart India Hackathon
+              End-to-end distributed system monitoring for NIMbus
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -56,9 +56,12 @@ export function Health() {
           </div>
         </div>
 
-        <SystemHealth /><div className="card">
+        <SystemHealth />
+
+        {/* SIH Distributed Pipeline Architecture Diagram */}
+        <div className="card">
           <div className="card-header">
-            <h3 className="card-title">SkyGuard Distributed Telemetry &amp; AI Pipeline</h3>
+            <h3 className="card-title">NIMbus Distributed Telemetry &amp; AI Pipeline</h3>
             <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>Real-Time Data Flow</span>
           </div>
           <div style={{ padding: "var(--space-5)" }}>

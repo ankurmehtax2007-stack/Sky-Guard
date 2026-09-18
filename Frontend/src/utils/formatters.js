@@ -52,6 +52,10 @@ export function formatConfidence(confidence) {
   return `${(Number(confidence) * 100).toFixed(1)}%`;
 }
 
+/**
+ * Format raw anomaly fault type strings (e.g. 'known_anomaly', 'temp', 'temperature_spike')
+ * into human-readable physical fault classifications.
+ */
 export function formatFaultType(anomalyType, sensor, value) {
   const raw = String(anomalyType || "").trim().toLowerCase();
 
@@ -86,6 +90,7 @@ export function formatFaultType(anomalyType, sensor, value) {
     return map[raw];
   }
 
+  // Handle uninformative generic strings like 'known_anomaly', 'know_anomaly', 'temp', or empty
   const s = String(sensor || "").toLowerCase();
   if (
     raw === "known_anomaly" ||
@@ -120,6 +125,7 @@ export function formatFaultType(anomalyType, sensor, value) {
     return "Physical Fault";
   }
 
+  // Fallback: Convert snake_case or kebab-case to Title Case
   return raw
     .replace(/[_-]/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -143,7 +149,10 @@ export function parseApiError(error) {
   return error.message || "An unexpected error occurred.";
 }
 
-export function exportAnomaliesToCSV(anomalies, filename = "skyguard_anomalies_report.csv") {
+/**
+ * Export anomaly records to a standard CSV download for reporting & auditing
+ */
+export function exportAnomaliesToCSV(anomalies, filename = "nimbus_anomalies_report.csv") {
   if (!anomalies || anomalies.length === 0) return;
 
   const headers = [
@@ -187,6 +196,9 @@ export function exportAnomaliesToCSV(anomalies, filename = "skyguard_anomalies_r
   document.body.removeChild(link);
 }
 
+/**
+ * Synthesize an alert sound using Web Audio API
+ */
 export function playAlertSound(severity = "high") {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -199,6 +211,7 @@ export function playAlertSound(severity = "high") {
     const freq = severity === "critical" ? 880 : severity === "high" ? 660 : 440;
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
+    // Beep envelope
     gain.gain.setValueAtTime(0.15, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
 
@@ -208,5 +221,6 @@ export function playAlertSound(severity = "high") {
     osc.start();
     osc.stop(ctx.currentTime + 0.4);
   } catch {
+    // Audio might be blocked if user hasn't interacted yet
   }
 }

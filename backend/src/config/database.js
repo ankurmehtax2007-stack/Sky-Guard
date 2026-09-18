@@ -5,8 +5,12 @@ import logger from "../utils/logger.js";
 
 const connectDB = async () => {
     try {
+        if (!config.mongoURI) {
+            throw new Error("MONGODB_URI is required. Configure it before starting the backend.");
+        }
+
         await mongoose.connect(config.mongoURI);
-        logger.info("Database connected");
+        logger.info({ database: mongoose.connection.name }, "Database connected");
     } catch (error) {
         logger.error({ error }, "Error connecting to database");
         throw error;

@@ -1,8 +1,12 @@
 {
   "name": "frontend",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "description": "This build contains the modified React/Vite frontend for NIMbus AI. It is configured for the existing NIMbus Node/Express backend at `http://localhost:3000`.",
+  "license": "ISC",
+  "author": "",
   "type": "module",
+  "main": "eslint.config.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -1,16 +1,24 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useWsMessage } from "../context/WebSocketContext";
 import { useLatestReadings } from "./useReadings";
-import { ACTIVE_STATION_IDS } from "../utils/constants";
-import { getTotalReadingsCount, getStationReadings } from "../api/reading";
+import { ACTIVE_STATION_IDS, getStationCity } from "../utils/constants";
+import { useCityScope } from "../context/CityScope";
 import {
-  loadSavedAnomalies,
   saveAnomaliesToStorage,
-  normalizeReadingToAnomaly,
   mergeAnomalies,
 } from "../utils/anomalyStorage";
 
+/**
+ * Extends useLatestReadings with real-time WebSocket updates.
+ *
+ * Backend broadcasts: { type: "READING_UPDATED", data: ReadingObject }
+ *
+ * 1. Fetches initial latest readings via REST
+ * 2. Listens on the shared WebSocket for READING_UPDATED events
+ * 3. Updates the in-memory map (keyed by stationId) with the live reading
+ */
 export function useRealtimeReadings() {
+  const { city } = useCityScope();
   const {
     data: initialReadings,
     loading,
@@ -20,20 +28,21 @@ export function useRealtimeReadings() {
 
   const [liveMap, setLiveMap] = useState(new Map());
 
+  // REST is the authoritative snapshot. Replace the map when the selected
+  // city changes so data from the previous city cannot bleed into the next view.
   useEffect(() => {
-    if (initialReadings && initialReadings.length > 0) {
-      setLiveMap((prev) => {
-        const next = new Map(prev);
-        for (const r of initialReadings) {
-          if (!next.has(r.stationId)) {
-            next.set(r.stationId, r);
-          }
-        }
-        return next;
-      });
-    }
-  }, [initialReadings]);
+    if (!Array.isArray(initialReadings)) return;
+    setLiveMap((prev) => {
+      const next = new Map();
+      for (const r of initialReadings) {
+        const previous = prev.get(r.stationId);
+        next.set(r.stationId, previous ? { ...previous, ...r } : r);
+      }
+      return next;
+    });
+  }, [initialReadings, city]);
 
+  // Subscribe to WebSocket messages via shared context
   const handleMessage = useCallback((msg) => {
     if (msg.type === "READING_UPDATED" && msg.data?.stationId) {
       if (!ACTIVE_STATION_IDS.includes(msg.data.stationId)) return;
@@ -68,7 +77,10 @@ export function useRealtimeReadings() {
   useWsMessage(handleMessage);
 
   const data = Array.from(liveMap.values())
-    .filter((r) => ACTIVE_STATION_IDS.includes(r.stationId))
+    .filter((r) =>
+      ACTIVE_STATION_IDS.includes(r.stationId) &&
+      (city === "All Cities" || getStationCity(r).toLowerCase() === city.toLowerCase())
+    )
     .sort((a, b) =>
       (a.stationId ?? "").localeCompare(b.stationId ?? "")
     );
@@ -81,22 +93,25 @@ export function useRealtimeReadings() {
   };
 }
 
+/**
+ * Extends a base anomaly list with real-time WebSocket updates.
+ *
+ * Backend broadcasts:
+ * 1. { type: "ANOMALY_DETECTED", stationId, anomaly: AnomalyObject }
+ * 2. { type: "READING_UPDATED", data: ReadingObject } (where anomaly=true or anomalyStatus="detected")
+ *
+ * Prepends live anomalies to the top, deduplicates, and saves to storage.
+ */
 export function useRealtimeAnomalies(baseData) {
-  const [liveAnomalies, setLiveAnomalies] = useState(() => {
-    if (baseData && baseData.length > 0) return baseData;
-    return loadSavedAnomalies();
-  });
+  const { city } = useCityScope();
+  const [liveAnomalies, setLiveAnomalies] = useState(() => (Array.isArray(baseData) ? baseData : []));
 
   useEffect(() => {
-    if (baseData && Array.isArray(baseData)) {
-      setLiveAnomalies((prev) => {
-        if (!prev || prev.length === 0) return baseData;
-        return mergeAnomalies(baseData, prev);
-      });
-    }
-  }, [baseData]);
+    if (Array.isArray(baseData)) setLiveAnomalies(baseData);
+  }, [baseData, city]);
 
   const handleMessage = useCallback((msg) => {
+    // Authoritative Anomaly Detection Event from ML Service
     if (msg.type === "ANOMALY_DETECTED" && msg.anomaly) {
       if (msg.stationId && !ACTIVE_STATION_IDS.includes(msg.stationId)) return;
       const anom = {
@@ -113,103 +128,8 @@ export function useRealtimeAnomalies(baseData) {
 
   useWsMessage(handleMessage);
 
-  return liveAnomalies.filter((a) => !a.stationId || ACTIVE_STATION_IDS.includes(a.stationId));
+  return liveAnomalies.filter((a) =>
+    (!a.stationId || ACTIVE_STATION_IDS.includes(a.stationId)) &&
+    (city === "All Cities" || getStationCity(a).toLowerCase() === city.toLowerCase())
+  );
 }
-
-export function useRealtimeReadingCount() {
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [isPulsing, setIsPulsing] = useState(false);
-  const [readingsInLastMinute, setReadingsInLastMinute] = useState(0);
-  const [barHeights, setBarHeights] = useState([10, 14, 18, 20, 22]);
-
-  const recentTimesRef = useRef([]);
-  const pulseTimerRef = useRef(null);
-
-  const syncCount = useCallback(async () => {
-    try {
-      let total = 0;
-      try {
-        const res = await getTotalReadingsCount(ACTIVE_STATION_IDS);
-        if (typeof res?.data?.total === "number") {
-          total = res.data.total;
-        }
-      } catch (err) {
-        const results = await Promise.all(
-          ACTIVE_STATION_IDS.map((id) =>
-            getStationReadings(id, { limit: 1 })
-              .then((r) => r?.data?.pagination?.total || 0)
-              .catch(() => 0)
-          )
-        );
-        total = results.reduce((acc, v) => acc + v, 0);
-      }
-
-      if (total > 0) {
-        setCount((prev) => (total > prev ? total : prev));
-      }
-    } catch (e) {
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    syncCount();
-    const timer = setInterval(syncCount, 30000);
-    return () => clearInterval(timer);
-  }, [syncCount]);
-
-  const handleMessage = useCallback((msg) => {
-    if (msg.type === "READING_UPDATED" && msg.data?.stationId) {
-      if (!ACTIVE_STATION_IDS.includes(msg.data.stationId)) return;
-
-      const now = Date.now();
-      const updated = [...recentTimesRef.current.filter((t) => now - t < 60000), now];
-      recentTimesRef.current = updated;
-      setReadingsInLastMinute(updated.length);
-
-      setCount((prev) => (prev > 0 ? prev + 1 : 1));
-
-      setIsPulsing(true);
-      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
-      pulseTimerRef.current = setTimeout(() => {
-        setIsPulsing(false);
-      }, 600);
-
-      const counts = [0, 0, 0, 0, 0];
-      for (const t of updated) {
-        const ageSec = (now - t) / 1000;
-        const idx = Math.min(4, Math.max(0, 4 - Math.floor(ageSec / 12)));
-        counts[idx]++;
-      }
-      const maxC = Math.max(1, ...counts);
-      const heights = counts.map((c, i) => {
-        if (c === 0) return 6 + i * 3;
-        return Math.min(23, Math.max(6, Math.round(6 + (c / maxC) * 16)));
-      });
-      setBarHeights(heights);
-    }
-  }, []);
-
-  useWsMessage(handleMessage);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const valid = recentTimesRef.current.filter((t) => now - t < 60000);
-      recentTimesRef.current = valid;
-      setReadingsInLastMinute(valid.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return {
-    count,
-    loading,
-    isPulsing,
-    readingsInLastMinute,
-    barHeights,
-  };
-}
-

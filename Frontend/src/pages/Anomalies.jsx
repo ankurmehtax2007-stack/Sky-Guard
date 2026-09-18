@@ -35,18 +35,21 @@ export default function Anomalies() {
     [anomalies, filters]
   );
 
+  // Triage incident counts
   const totalFaultCount = pagination?.total ? Math.max(pagination.total, anomalies.length) : anomalies.length;
   const pendingCount = anomalies.filter((a) => a.status === "pending").length;
   const criticalCount = anomalies.filter((a) => a.status === "pending" && a.severity === "critical").length;
   const resolvedCount = anomalies.filter((a) => a.status === "resolved").length;
 
   const handleExportCSV = () => {
-    exportAnomaliesToCSV(filtered, `skyguard_anomalies_${Date.now()}.csv`);
+    exportAnomaliesToCSV(filtered, `nimbus_anomalies_${Date.now()}.csv`);
   };
 
   return (
     <AppLayout pageTitle="Anomalies Operations Center">
-      <div className="page-stack"><div className="page-header-row" style={{ flexWrap: "wrap" }}>
+      <div className="page-stack">
+        {/* Page Header with Actions */}
+        <div className="page-header-row" style={{ flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <h2 className="page-heading">Anomaly Detection Log</h2>
@@ -65,7 +68,7 @@ export default function Anomalies() {
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
               className="btn btn-secondary btn-sm"
-              onClick={refetch}
+              onClick={() => refetch()}
               disabled={loading}
               title="Refresh anomaly data from server"
             >
@@ -82,7 +85,10 @@ export default function Anomalies() {
               Export CSV Report
             </button>
           </div>
-        </div><div className="stat-bar" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+        </div>
+
+        {/* Incident Triage Summary Cards */}
+        <div className="stat-bar" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
           <div className="stat-item">
             <span className="stat-item-label">Total Faults</span>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -1,16 +1,24 @@
-# React + Vite
+# NIMbus Frontend — Connected Build
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This build contains the modified React/Vite frontend for NIMbus AI. It is configured for the existing NIMbus Node/Express backend at `http://localhost:3000`.
 
-Currently, two official plugins are available:
+## Included changes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Removed the glitter/sparkle/glow treatment from dashboard telemetry graphs.
+- Dashboard telemetry now uses clean normal lines and small data points.
+- Replaced the 3D/night Earth globe treatment on the India fleet page with a normal flat India map while keeping the station points and live anomaly status.
+- Removed the standalone AI Insights navigation/route because the AI/XAI diagnosis is already available in Live Monitoring / anomaly diagnosis.
+- Removed the obsolete `viewer` role from the frontend role routing.
+- Root URL now goes to Login instead of opening the dashboard directly.
+- Role scope is derived from the backend `stationId` for engineer/operator views.
+- Frontend REST base URL remains `http://localhost:3000` by default and can be changed with `VITE_API_URL`.
 
-## React Compiler
+## Run
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```cmd
+cd Frontend
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Backend should be running separately on port 3000. The uploaded source archive contained the frontend application only, so the backend source itself is not duplicated in this ZIP. Keep your existing `Sky-Guard/backend` folder alongside this `Frontend` folder.

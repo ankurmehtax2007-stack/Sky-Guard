@@ -442,12 +442,12 @@ export const createUserService = async (username, email, password, role = "engin
             throw err;
         }
         assignedStationId = String(stationId).trim();
+    } else if (normalizedRole !== "admin") {
+        assignedStationId = "AWS_01";
     }
 
-    let initialStatus = "PENDING";
-    if (normalizedRole === "admin") {
-        initialStatus = "ACTIVE";
-    } else if (status) {
+    let initialStatus = "ACTIVE";
+    if (status) {
         const normalizedStatus = String(status).toUpperCase();
         if (!["PENDING", "ACTIVE", "REJECTED", "SUSPENDED"].includes(normalizedStatus)) {
             const err = new Error("Invalid status. Allowed: PENDING, ACTIVE, REJECTED, SUSPENDED");
@@ -455,8 +455,6 @@ export const createUserService = async (username, email, password, role = "engin
             throw err;
         }
         initialStatus = normalizedStatus;
-    } else if (assignedStationId) {
-        initialStatus = "ACTIVE";
     }
 
     const existingByEmail = await findUserByEmail(email);

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { getLatestReadings, getStationReadings } from "../api/reading";
 import { parseApiError } from "../utils/formatters";
-import { ACTIVE_STATION_IDS } from "../utils/constants";
+import { ACTIVE_STATION_IDS, getStationCity } from "../utils/constants";
+import { useCityScope } from "../context/CityScope";
 
 export function useLatestReadings() {
+  const { city } = useCityScope();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,14 +16,17 @@ export function useLatestReadings() {
     try {
       const res = await getLatestReadings();
       const raw = res.data ?? [];
-      const filtered = raw.filter((r) => ACTIVE_STATION_IDS.includes(r.stationId));
-      setData(filtered.length > 0 ? filtered : raw);
+      const active = raw.filter((r) => ACTIVE_STATION_IDS.includes(r.stationId));
+      const filtered = city === "All Cities"
+        ? active
+        : active.filter((r) => getStationCity(r).toLowerCase() === city.toLowerCase());
+      setData(filtered);
     } catch (err) {
       setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [city]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

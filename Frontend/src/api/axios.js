@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // 15s timeout to allow MongoDB queries to complete
+  timeout: 15000, 
   headers: {
     "Content-Type": "application/json",
   },
@@ -19,79 +19,46 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
+    // City scope is only sent for GET requests. Never leak an old admin
+    // selection into an engineer/operator session. Non-admin users use the
+    // city stored on their authenticated account.
+    if (config.method?.toLowerCase() === "get") {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+        const role = String(storedUser?.role || "").toLowerCase();
+        const selectedCity = role === "admin"
+          ? localStorage.getItem("nimbus_admin_city")
+          : storedUser?.city || null;
+        if (selectedCity && selectedCity !== "All Cities") {
+          config.params = { ...(config.params || {}), city: selectedCity };
+        }
+      } catch {
+        // Ignore malformed local user data; the bearer token still authenticates.
+      }
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-
-    const isAuthEndpoint =
-      originalRequest?.url?.includes("/api/auth/login") ||
-      originalRequest?.url?.includes("/api/auth/register") ||
-      originalRequest?.url?.includes("/api/auth/refresh");
-
-    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes("/api/auth/login") && !originalRequest.url?.includes("/api/auth/refresh")) {
       originalRequest._retry = true;
-      isRefreshing = true;
-
       try {
-        const { data } = await axios.post(
-          `${API_BASE_URL}/api/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-
-        const newAccessToken = data.accessToken;
-        localStorage.setItem("accessToken", newAccessToken);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
+        const refreshRes = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true });
+        if (refreshRes.data?.accessToken) {
+          localStorage.setItem("accessToken", refreshRes.data.accessToken);
+          originalRequest.headers.Authorization = `Bearer ${refreshRes.data.accessToken}`;
+          return api(originalRequest);
         }
-
-        api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
+      } catch (refreshErr) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
-        window.dispatchEvent(new Event("auth:expired"));
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
-
     return Promise.reject(error);
   }
 );

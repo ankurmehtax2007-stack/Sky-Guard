@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { loginUser, registerUser, logoutUser, getMe, refreshToken } from "../api/auth";
+import { loginUser, logoutUser } from "../api/auth";
+import { parseApiError } from "../utils/formatters";
 
 const AuthContext = createContext(null);
 
@@ -15,132 +16,78 @@ function parseJwt(token) {
 function isTokenValid(token) {
   if (!token) return false;
   const payload = parseJwt(token);
-  if (!payload) return false;
-  return payload.exp * 1000 > Date.now();
+  const expiry = Number(payload?.exp);
+  return Number.isFinite(expiry) && expiry * 1000 > Date.now();
+}
+
+function readStoredUser() {
+  try {
+    const rawUser = localStorage.getItem("user");
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    // A partially written or older-format value must never prevent the app
+    // from mounting. The valid JWT still contains the required identity data.
+    localStorage.removeItem("user");
+    return null;
+  }
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const cached = localStorage.getItem("user");
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const token = localStorage.getItem("accessToken");
-    return !!token && isTokenValid(token);
-  });
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function initAuth() {
-      const token = localStorage.getItem("accessToken");
+    const initAuth = async () => {
+      let token = localStorage.getItem("accessToken");
+      if (!token || !isTokenValid(token)) {
+        try {
+          const res = await api.post("/api/auth/refresh");
+          if (res.data?.accessToken) {
+            token = res.data.accessToken;
+            localStorage.setItem("accessToken", token);
+          }
+        } catch {
+          // Refresh token invalid or absent
+        }
+      }
 
       if (token && isTokenValid(token)) {
-        try {
-          const data = await getMe();
-          if (isMounted && data?.user) {
-            setUser(data.user);
-            setIsAuthenticated(true);
-            localStorage.setItem("user", JSON.stringify(data.user));
-          }
-        } catch {
-          try {
-            const refreshData = await refreshToken();
-            if (isMounted && refreshData?.user) {
-              setUser(refreshData.user);
-              setIsAuthenticated(true);
-              localStorage.setItem("user", JSON.stringify(refreshData.user));
-            }
-          } catch {
-            if (isMounted) {
-              setUser(null);
-              setIsAuthenticated(false);
-              localStorage.removeItem("accessToken");
-              localStorage.removeItem("user");
-            }
-          }
-        }
-      } else if (token) {
-        try {
-          const refreshData = await refreshToken();
-          if (isMounted && refreshData?.user) {
-            setUser(refreshData.user);
-            setIsAuthenticated(true);
-            localStorage.setItem("user", JSON.stringify(refreshData.user));
-          }
-        } catch {
-          if (isMounted) {
-            setUser(null);
-            setIsAuthenticated(false);
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("user");
-          }
-        }
+        const payload = parseJwt(token);
+        const storedUser = readStoredUser();
+        setUser({
+          id: storedUser?.id || payload?.id || payload?.sub,
+          username: storedUser?.username || payload?.username,
+          email: storedUser?.email || payload?.email,
+          role: String(payload?.role || storedUser?.role || "operator").toLowerCase(),
+          stationId: storedUser?.stationId || payload?.stationId || null,
+          city: storedUser?.city || payload?.city || null,
+        });
+        setIsAuthenticated(true);
       } else {
-        if (isMounted) {
-          setUser(null);
-          setIsAuthenticated(false);
-          localStorage.removeItem("user");
-        }
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
       }
-
-      if (isMounted) {
-        setIsInitializing(false);
-      }
-    }
+      setIsInitializing(false);
+    };
 
     initAuth();
-
-    const handleAuthExpired = () => {
-      setUser(null);
-      setIsAuthenticated(false);
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-    };
-
-    window.addEventListener("auth:expired", handleAuthExpired);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("auth:expired", handleAuthExpired);
-    };
   }, []);
 
   const login = useCallback(async (credentials) => {
     const data = await loginUser(credentials);
     const payload = parseJwt(data.accessToken);
-
     const userInfo = {
-      id: data.user?.id || data.user?._id || payload?.id || payload?.userId,
+      id: data.user?._id || payload?.id,
       username: data.user?.username || payload?.username,
       email: data.user?.email || payload?.email,
-      role: data.user?.role || payload?.role || "viewer",
+      role: String(data.user?.role || payload?.role || "operator").toLowerCase(),
+      stationId: data.user?.stationId || payload?.stationId || null,
+      city: data.user?.city || payload?.city || null,
     };
-
     setUser(userInfo);
-    setIsAuthenticated(true);
     localStorage.setItem("user", JSON.stringify(userInfo));
-    return data;
-  }, []);
-
-  const register = useCallback(async (userData) => {
-    const data = await registerUser(userData);
-    const payload = parseJwt(data.accessToken);
-
-    const userInfo = {
-      id: data.user?.id || data.user?._id || payload?.id || payload?.userId,
-      username: data.user?.username || payload?.username,
-      email: data.user?.email || payload?.email,
-      role: data.user?.role || payload?.role || "viewer",
-    };
-
-    setUser(userInfo);
     setIsAuthenticated(true);
-    localStorage.setItem("user", JSON.stringify(userInfo));
     return data;
   }, []);
 
@@ -148,37 +95,19 @@ export function AuthProvider({ children }) {
     try {
       await logoutUser();
     } catch {
+      // Even if backend logout fails, clear local state
     } finally {
-      setUser(null);
-      setIsAuthenticated(false);
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
+      setUser(null);
+      setIsAuthenticated(false);
     }
   }, []);
 
-  const userRole = user?.role?.toLowerCase() || "viewer";
-
-  const isAdmin = userRole === "admin";
-  const isEngineer = userRole === "engineer" || userRole === "admin";
-  const isOperator = userRole === "operator" || userRole === "engineer" || userRole === "admin";
-  const isViewer = true; // All authenticated users can view
-
-  const value = {
-    user,
-    isAuthenticated,
-    isInitializing,
-    role: userRole,
-    isAdmin,
-    isEngineer,
-    isOperator,
-    isViewer,
-    login,
-    register,
-    logout,
-  };
+  const role = user?.role || "operator";
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, role, isAuthenticated, isInitializing, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

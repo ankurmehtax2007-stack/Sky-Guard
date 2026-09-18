@@ -4,13 +4,19 @@ import "./index.css";
 import App from "./App.jsx";
 import { WebSocketProvider } from "./context/WebSocketContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { CityScopeProvider } from "./context/CityScope.jsx";
+import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <AuthProvider>
-      <WebSocketProvider>
-        <App />
-      </WebSocketProvider>
-    </AuthProvider>
-  </StrictMode>
+    <ErrorBoundary>
+      <AuthProvider>
+        <WebSocketProvider>
+          <CityScopeProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </CityScopeProvider>
+        </WebSocketProvider>
+      </AuthProvider>
+    </ErrorBoundary>
 );

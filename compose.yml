@@ -36,13 +36,18 @@ services:
     container_name: sih-backend-container
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
     env_file:
       - ./backend/.env
     environment:
       ML_SERVICE_URL: http://ml-service1:8000
       MQTT_BROKER: mqtt-broker
       MQTT_PORT: 1883
-      MONGODB_URI: mongodb://mongodb:27017/skyguard
+      # Keep the app on the same Atlas database currently used in Compass.
+      # An explicit MONGODB_URI still takes precedence for other deployments.
+      MONGODB_URI: ${MONGODB_URI:-mongodb+srv://priyanshuvats672_db_user:hk7UgsDv0n7ozjQG@cluster0.ox9lnxi.mongodb.net/test?appName=Cluster0}
     depends_on:
       - mongodb
       - mqtt-broker

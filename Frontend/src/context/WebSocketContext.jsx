@@ -43,6 +43,7 @@ export function WebSocketProvider({ children }) {
           listener(data);
         }
       } catch {
+        // ignore malformed messages
       }
     };
 
@@ -86,6 +87,11 @@ export function WebSocketProvider({ children }) {
   );
 }
 
+/**
+ * Hook to subscribe to WebSocket messages.
+ * Calls `handler(parsedMessage)` for every message received.
+ * Auto-unsubscribes on unmount.
+ */
 export function useWsMessage(handler) {
   const ctx = useContext(WebSocketContext);
   const handlerRef = useRef(handler);
@@ -98,6 +104,10 @@ export function useWsMessage(handler) {
   }, [ctx]);
 }
 
+/**
+ * Hook to get the current WebSocket connection status.
+ * Returns: "connecting" | "connected" | "disconnected"
+ */
 export function useWsStatus() {
   const ctx = useContext(WebSocketContext);
   return ctx?.status ?? "disconnected";

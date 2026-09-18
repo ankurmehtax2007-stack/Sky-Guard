@@ -81,7 +81,7 @@ export function AnomalyTable({ anomalies, loading, onViewDetail }) {
                     <button
                       className="btn btn-secondary btn-xs"
                       onClick={() => onViewDetail(a._id)}
-                      title="Investigate anomaly detail & SOP"
+                      title="Investigate anomaly detail"
                       style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
                     >
                       <span>Diagnose</span>

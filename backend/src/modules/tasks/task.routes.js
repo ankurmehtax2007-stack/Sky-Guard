@@ -11,6 +11,7 @@ import {
     assignTask,
     updateTaskStatus,
     addNote,
+    getAssignableEngineers,
 } from "./task.controller.js";
 
 const taskRoutes = Router();
@@ -34,6 +35,13 @@ taskRoutes.get(
     authenticateUser,
     authorize(PERMISSIONS.TASK_READ),
     getMyTasks
+);
+
+taskRoutes.get(
+    "/engineers",
+    authenticateUser,
+    authorize([PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_READ_ALL, PERMISSIONS.TASK_CREATE, PERMISSIONS.TASK_READ]),
+    getAssignableEngineers
 );
 
 taskRoutes.get(

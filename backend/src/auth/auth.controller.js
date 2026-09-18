@@ -64,10 +64,11 @@ export const loginUser = async (req, res) => {
             req.ip
         );
 
+        const isSecure = Boolean(req.secure || req.headers["x-forwarded-proto"] === "https");
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: config.nodeEnv === "production",
-            sameSite: "strict",
+            secure: isSecure,
+            sameSite: isSecure ? "none" : "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -129,7 +130,7 @@ export const getAllUsers = async (req, res) => {
         return res.status(200).json(users);
     } catch (error) {
         logger.error({ error }, "Error in fetching users");
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }
 };
 
@@ -226,7 +227,12 @@ export const updateUserRole = async (req, res) => {
 
 export const createUserByAdmin = async (req, res) => {
     try {
-        const { username, email, password, role = "engineer", stationId = null, status } = req.body;
+        const callerRole = (req.user?.role || "").toLowerCase();
+        if (callerRole !== "admin") {
+            return res.status(403).json({ message: "Forbidden: Only administrators can create users" });
+        }
+
+        const { username, email, password, role = "engineer", stationId = null, status = "ACTIVE" } = req.body;
         const newUser = await createUserService(username, email, password, role, stationId, status);
         res.status(201).json({
             message: "User created successfully",

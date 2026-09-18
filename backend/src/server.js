@@ -7,22 +7,21 @@ import { initializeWebSocket } from "./websocket/websocket.server.js";
 import { startMLRetryWorker, stopMLRetryWorker } from "./modules/worker/mlRetry.worker.js";
 import { startAnomalyRetryWorker, stopAnomalyRetryWorker } from "./modules/worker/anomalyRetry.worker.js";
 import { initStationSeed } from "./modules/stations/station.repository.js";
+import { initUserSeed } from "./auth/user.repository.js";
 import logger from "./utils/logger.js";
 
 const startServer = async () => {
     try {
         await connectDB(); 
         await initStationSeed();
+        await initUserSeed();
         connectMQTT();
         logger.info("Backend started successfully");
     } catch (error) {
         logger.error({ error }, "Failed to start backend");
+        throw error;
     }
 };
-
-// Start retry workers.
-startMLRetryWorker();
-startAnomalyRetryWorker();
 
 const closeHTTPServer = () => {
     return new Promise((resolve, reject) => {
@@ -39,6 +38,24 @@ const closeHTTPServer = () => {
 
 const server = http.createServer(app);
 const wss = initializeWebSocket(server);
+
+const bootstrap = async () => {
+    try {
+        await startServer();
+        startMLRetryWorker();
+        startAnomalyRetryWorker();
+
+        const PORT = config.port || 8000;
+        server.listen(PORT, () => {
+            logger.info(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        // Do not accept requests that could be mistaken for persisted writes
+        // when the database has not connected successfully.
+        logger.fatal({ error }, "Backend could not start because MongoDB is unavailable");
+        process.exitCode = 1;
+    }
+};
 
 const shutdownServer = async () => {
     logger.info("Shutting down server...");
@@ -59,9 +76,4 @@ const shutdownServer = async () => {
 process.on("SIGTERM", shutdownServer);
 process.on("SIGINT", shutdownServer);
 
-const PORT = config.port || 8000;
-server.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
-});
-
-startServer();
+bootstrap();
