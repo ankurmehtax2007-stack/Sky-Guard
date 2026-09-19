@@ -123,6 +123,15 @@ export function useRealtimeAnomalies(baseData) {
         saveAnomaliesToStorage(next);
         return next;
       });
+    } else if (msg.type === "ANOMALY_STATUS_UPDATED" && msg.anomaly) {
+      setLiveAnomalies((prev) => {
+        const updatedId = msg.anomaly._id;
+        const next = prev.map((item) =>
+          item._id === updatedId ? { ...item, ...msg.anomaly } : item
+        );
+        saveAnomaliesToStorage(next);
+        return next;
+      });
     }
   }, []);
 

@@ -64,6 +64,20 @@ const anomalySchema = new Schema({
 
     resolvedBy: String,
 
+    assignedTo: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null
+    },
+
+    assignedToName: String,
+
+    assignedTaskId: {
+        type: Schema.Types.ObjectId,
+        ref: "Task",
+        default: null
+    },
+
     detectedAt: {
         type: Date,
         default: Date.now

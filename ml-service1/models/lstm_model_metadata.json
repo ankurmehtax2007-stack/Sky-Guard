@@ -1,0 +1,28 @@
+{
+  "framework": "PyTorch",
+  "onnx_model": "lstm_temporal_autoencoder.onnx",
+  "native_checkpoint": "lstm_temporal_autoencoder.pt",
+  "preprocessing_file": "lstm_temporal_metadata.joblib",
+  "input_name": "temporal_sequence",
+  "output_name": "reconstruction",
+  "input_shape": [
+    "batch_size",
+    48,
+    3
+  ],
+  "output_shape": [
+    "batch_size",
+    48,
+    3
+  ],
+  "features": [
+    "temperature_c",
+    "humidity_pct",
+    "pressure_hpa"
+  ],
+  "sequence_length": 48,
+  "calibration": {
+    "median": 0.011036434210836887,
+    "scale": 0.007456099465303122
+  }
+}

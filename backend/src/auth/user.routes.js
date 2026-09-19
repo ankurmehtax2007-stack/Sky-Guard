@@ -31,7 +31,13 @@ userRoutes.get("/rejected", authenticateUser, authorize(PERMISSIONS.USERS_READ),
     next();
 }, getAllUsers);
 
-userRoutes.get("/", authenticateUser, authorize(PERMISSIONS.USERS_READ), getAllUsers);
+userRoutes.get("/", authenticateUser, (req, res, next) => {
+    const role = (req.user?.role || "").toLowerCase();
+    if (role === "operator" && req.query.role === "engineer") {
+        return next();
+    }
+    return authorize(PERMISSIONS.USERS_READ)(req, res, next);
+}, getAllUsers);
 userRoutes.post("/", authenticateUser, authorize(PERMISSIONS.USERS_CREATE), createUserByAdmin);
 userRoutes.get("/:id", authenticateUser, authorize(PERMISSIONS.USERS_READ), getUserById);
 userRoutes.put("/:id", authenticateUser, authorize(PERMISSIONS.USERS_UPDATE), updateUser);

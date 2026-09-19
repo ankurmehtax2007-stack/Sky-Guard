@@ -26,10 +26,13 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df['timestamp'] = pd.Timestamp.now()
 
     if 'station_id' not in df.columns:
-        df['station_id'] = 'DEMO-001'
+        df['station_id'] = 'AWS_001'
+    else:
+        df['station_id'] = df['station_id'].fillna('AWS_001').astype(str)
 
     df = df.sort_values(['station_id', 'timestamp']).reset_index(drop=True)
     
+    # Fill gaps per station, then fall back to defaults
     fallbacks = {'temperature_c': 25.0, 'humidity_pct': 50.0, 'pressure_hpa': 1013.25}
     for c, default_val in fallbacks.items():
         df[c] = df.groupby('station_id')[c].transform(lambda s: s.interpolate().ffill().bfill())

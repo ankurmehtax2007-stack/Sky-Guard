@@ -44,7 +44,7 @@ export const injectAnomaly = (reading) => {
             break;
         }
 
-        case 4: {
+        case 4: 
             const sensors = ["temperature", "humidity", "pressure"];
             const sensor = sensors[Math.floor(Math.random() * sensors.length)];
             const extremeValue = sensor === "temperature" ? 54.5 : sensor === "humidity" ? 98.5 : 940.0;

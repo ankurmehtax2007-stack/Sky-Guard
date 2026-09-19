@@ -12,9 +12,10 @@ import {
 } from "../utils/anomalyStorage";
 
 export function useAnomalies() {
-  const { city } = useCityScope();
+  const { city, stationId } = useCityScope();
   const [data, setData] = useState([]);
   const [pagination, setPagination] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,7 +25,10 @@ export function useAnomalies() {
 
     try {
       // 1. Fetch official anomaly records directly from backend
-      const res = await getAnomalies({ limit: 100 });
+      const queryParams = { limit: 100 };
+      if (stationId) queryParams.stationId = stationId;
+
+      const res = await getAnomalies(queryParams);
       if (res?.data?.anomalies) {
         const serverAnomalies = res.data.anomalies.filter(
           (a) =>
@@ -33,6 +37,7 @@ export function useAnomalies() {
         );
         setData(serverAnomalies);
         setPagination(res.data?.pagination ?? null);
+        setStats(res.data?.stats ?? null);
         saveAnomaliesToStorage(serverAnomalies);
       }
     } catch (err) {
@@ -49,13 +54,13 @@ export function useAnomalies() {
     } finally {
       setLoading(false);
     }
-  }, [city]);
+  }, [city, stationId]);
 
   useEffect(() => {
     fetch();
   }, [fetch]);
 
-  return { data, pagination, loading, error, refetch: fetch };
+  return { data, pagination, stats, loading, error, refetch: fetch };
 }
 
 export function useStationAnomalies(stationId) {

@@ -1,0 +1,618 @@
+{
+  "architecture_version": "SkyGuard Production Autonomous Maintenance Intelligence v1.0",
+  "export_timestamp_utc": "2026-09-16T15:21:59Z",
+  "feature_cols": [
+    "temperature_c",
+    "humidity_pct",
+    "pressure_hpa",
+    "hour_sin",
+    "hour_cos",
+    "month_sin",
+    "month_cos",
+    "cluster_temp_mean",
+    "cluster_temp_std",
+    "cluster_press_mean",
+    "cluster_press_std",
+    "cluster_hum_mean",
+    "cluster_hum_std",
+    "spatial_temp_zscore",
+    "spatial_press_zscore",
+    "spatial_hum_zscore",
+    "neighbor_dev_score",
+    "cluster_anomaly_pct",
+    "dewpoint_c",
+    "dewpoint_depression_c",
+    "temperature_c_diff_lag1",
+    "temperature_c_diff_lag24",
+    "temperature_c_rate_1h",
+    "temperature_c_roll6_mean",
+    "temperature_c_roll6_var",
+    "temperature_c_frozen_count",
+    "temperature_c_roll24_diff",
+    "temperature_c_roll24_zscore",
+    "humidity_pct_diff_lag1",
+    "humidity_pct_diff_lag24",
+    "humidity_pct_rate_1h",
+    "humidity_pct_roll6_mean",
+    "humidity_pct_roll6_var",
+    "humidity_pct_frozen_count",
+    "humidity_pct_roll24_diff",
+    "humidity_pct_roll24_zscore",
+    "pressure_hpa_diff_lag1",
+    "pressure_hpa_diff_lag24",
+    "pressure_hpa_rate_1h",
+    "pressure_hpa_roll6_mean",
+    "pressure_hpa_roll6_var",
+    "pressure_hpa_frozen_count",
+    "pressure_hpa_roll24_diff",
+    "pressure_hpa_roll24_zscore",
+    "cluster_Konkan_Deccan",
+    "cluster_NCR",
+    "cluster_Tamil_Nadu_Coast",
+    "cluster_West_Bengal",
+    "cluster___MISSING__"
+  ],
+  "model_feature_base": [
+    "temperature_c",
+    "humidity_pct",
+    "pressure_hpa",
+    "hour_sin",
+    "hour_cos",
+    "month_sin",
+    "month_cos",
+    "cluster_temp_mean",
+    "cluster_temp_std",
+    "cluster_press_mean",
+    "cluster_press_std",
+    "cluster_hum_mean",
+    "cluster_hum_std",
+    "spatial_temp_zscore",
+    "spatial_press_zscore",
+    "spatial_hum_zscore",
+    "neighbor_dev_score",
+    "cluster_anomaly_pct",
+    "dewpoint_c",
+    "dewpoint_depression_c",
+    "temperature_c_diff_lag1",
+    "temperature_c_diff_lag24",
+    "temperature_c_rate_1h",
+    "temperature_c_roll6_mean",
+    "temperature_c_roll6_var",
+    "temperature_c_frozen_count",
+    "temperature_c_roll24_diff",
+    "temperature_c_roll24_zscore",
+    "humidity_pct_diff_lag1",
+    "humidity_pct_diff_lag24",
+    "humidity_pct_rate_1h",
+    "humidity_pct_roll6_mean",
+    "humidity_pct_roll6_var",
+    "humidity_pct_frozen_count",
+    "humidity_pct_roll24_diff",
+    "humidity_pct_roll24_zscore",
+    "pressure_hpa_diff_lag1",
+    "pressure_hpa_diff_lag24",
+    "pressure_hpa_rate_1h",
+    "pressure_hpa_roll6_mean",
+    "pressure_hpa_roll6_var",
+    "pressure_hpa_frozen_count",
+    "pressure_hpa_roll24_diff",
+    "pressure_hpa_roll24_zscore"
+  ],
+  "classes": [
+    "normal",
+    "temperature_spike",
+    "humidity_spike",
+    "pressure_jump",
+    "freeze",
+    "offset",
+    "multivariate_inconsistency",
+    "spatial_inconsistency"
+  ],
+  "anomaly_classes": [
+    "temperature_spike",
+    "humidity_spike",
+    "pressure_jump",
+    "freeze",
+    "offset",
+    "multivariate_inconsistency",
+    "spatial_inconsistency"
+  ],
+  "class_to_idx": {
+    "normal": 0,
+    "temperature_spike": 1,
+    "humidity_spike": 2,
+    "pressure_jump": 3,
+    "freeze": 4,
+    "offset": 5,
+    "multivariate_inconsistency": 6,
+    "spatial_inconsistency": 7
+  },
+  "idx_to_class": {
+    "0": "normal",
+    "1": "temperature_spike",
+    "2": "humidity_spike",
+    "3": "pressure_jump",
+    "4": "freeze",
+    "5": "offset",
+    "6": "multivariate_inconsistency",
+    "7": "spatial_inconsistency"
+  },
+  "configs": {
+    "physics": {
+      "absolute": {
+        "temp_min_c": -40.0,
+        "temp_max_c": 60.0,
+        "humidity_min_pct": 0.0,
+        "humidity_max_pct": 100.0,
+        "pressure_min_hpa": 870.0,
+        "pressure_max_hpa": 1085.0
+      },
+      "rate_per_hour": {
+        "temperature_c": 12.0,
+        "humidity_pct": 35.0,
+        "pressure_hpa": 6.0
+      },
+      "dewpoint": {
+        "max_depression_c": 45.0,
+        "min_depression_c": -0.5,
+        "supersaturation_tolerance_c": 0.5
+      },
+      "freeze": {
+        "min_duration_hours": 6.0
+      },
+      "weights": {
+        "range": 0.3,
+        "rate": 0.25,
+        "dewpoint": 0.25,
+        "cross_sensor": 0.2
+      },
+      "season_months": {
+        "winter": [
+          12,
+          1,
+          2
+        ],
+        "pre_monsoon": [
+          3,
+          4,
+          5
+        ],
+        "monsoon": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "post_monsoon": [
+          10,
+          11
+        ]
+      },
+      "regional_rules": {
+        "hot_dry": {
+          "temp_min_c": 5.0,
+          "temp_max_c": 50.0,
+          "humidity_min_pct": 2.0,
+          "humidity_max_pct": 98.0
+        },
+        "hot_semi_arid": {
+          "temp_min_c": 5.0,
+          "temp_max_c": 48.0,
+          "humidity_min_pct": 5.0,
+          "humidity_max_pct": 100.0
+        },
+        "humid_subtropical": {
+          "temp_min_c": -5.0,
+          "temp_max_c": 45.0,
+          "humidity_min_pct": 5.0,
+          "humidity_max_pct": 100.0
+        },
+        "tropical_wet": {
+          "temp_min_c": 10.0,
+          "temp_max_c": 42.0,
+          "humidity_min_pct": 10.0,
+          "humidity_max_pct": 100.0
+        },
+        "tropical_dry": {
+          "temp_min_c": 8.0,
+          "temp_max_c": 45.0,
+          "humidity_min_pct": 5.0,
+          "humidity_max_pct": 100.0
+        },
+        "mountain": {
+          "temp_min_c": -25.0,
+          "temp_max_c": 35.0,
+          "humidity_min_pct": 0.0,
+          "humidity_max_pct": 100.0
+        },
+        "default": {
+          "temp_min_c": -20.0,
+          "temp_max_c": 50.0,
+          "humidity_min_pct": 0.0,
+          "humidity_max_pct": 100.0
+        }
+      },
+      "region_classifier": {
+        "mountain_elevation_m": 1500.0,
+        "requires_coordinates_for_climate": true
+      },
+      "station_rules": {},
+      "station_season_rules": {},
+      "regional_season_rules": {}
+    },
+    "fusion": {
+      "w_iforest": 0.2,
+      "w_temporal": 0.2,
+      "w_spatial": 0.2,
+      "w_physics": 0.2,
+      "w_xgboost": 0.2
+    },
+    "decision": {
+      "anomaly_threshold": 0.45,
+      "known_class_threshold": 0.4,
+      "novelty_threshold": 0.65
+    },
+    "severity": {
+      "weight_anomaly_strength": 0.4,
+      "weight_confidence": 0.2,
+      "weight_persistence": 0.15,
+      "weight_physics": 0.15,
+      "weight_specific_evidence": 0.1,
+      "persistence_window": 3,
+      "thresholds": {
+        "LOW": 0.0,
+        "MEDIUM": 0.4,
+        "HIGH": 0.65,
+        "CRITICAL": 0.85
+      }
+    },
+    "health": {
+      "base_score": 100.0,
+      "max_anomaly_deduction": 40.0,
+      "max_missing_deduction": 20.0,
+      "max_physics_deduction": 15.0,
+      "max_spatial_deduction": 15.0,
+      "max_specific_deduction": 20.0,
+      "severity_penalties": {
+        "LOW": 8.0,
+        "MEDIUM": 18.0,
+        "HIGH": 30.0,
+        "CRITICAL": 40.0,
+        "NONE": 0.0
+      },
+      "specific_penalty_weights": {
+        "temperature_spike": 20.0,
+        "humidity_spike": 20.0,
+        "pressure_jump": 20.0,
+        "freeze": 20.0,
+        "offset": 20.0,
+        "multivariate_inconsistency": 20.0,
+        "spatial_inconsistency": 20.0
+      }
+    },
+    "temporal": {
+      "short_window_hours": 6.0,
+      "medium_window_hours": 24.0,
+      "long_window_hours": 168.0,
+      "minimum_records_required": 6,
+      "max_records_per_station": 168,
+      "max_gap_hours": 6.0,
+      "z_scale": 3.5,
+      "rate_scales_per_hour": {
+        "temperature_c": 6.0,
+        "humidity_pct": 20.0,
+        "pressure_hpa": 3.0
+      },
+      "acceleration_scales_per_hour2": {
+        "temperature_c": 4.0,
+        "humidity_pct": 12.0,
+        "pressure_hpa": 2.0
+      },
+      "freeze": {
+        "min_duration_hours": 6.0,
+        "value_tolerance": 0.01,
+        "local_std_scale": 0.05
+      },
+      "offset": {
+        "short_window_hours": 6.0,
+        "long_window_hours": 168.0,
+        "scale_multipliers": {
+          "temperature_c": 2.0,
+          "humidity_pct": 8.0,
+          "pressure_hpa": 2.0
+        }
+      },
+      "cusum": {
+        "drift": 0.5,
+        "threshold": 4.0,
+        "reset_on_normal": true
+      },
+      "weights": {
+        "statistical": 0.3,
+        "freeze": 0.15,
+        "offset": 0.2,
+        "multivariate": 0.2,
+        "cusum": 0.15
+      }
+    },
+    "lstm_autoencoder": {
+      "sequence_length": 48,
+      "features": [
+        "temperature_c",
+        "humidity_pct",
+        "pressure_hpa"
+      ],
+      "latent_units": 16,
+      "lstm_units": 32,
+      "epochs": 30,
+      "batch_size": 256,
+      "learning_rate": 0.001,
+      "score_weight": 0.5,
+      "seed": 42
+    }
+  },
+  "spatial_model": {
+    "framework": "PyTorch",
+    "onnx_model": "gcn_spatial_model.onnx",
+    "native_checkpoint": "gcn_spatial_model.pt",
+    "adjacency_file": "gcn_normalized_adjacency.npy",
+    "station_order_file": "gcn_station_order.json",
+    "onnx_opset_version": 17,
+    "onnx_inputs": [
+      "node_features",
+      "adjacency"
+    ],
+    "onnx_output": "reconstruction",
+    "features": [
+      "temperature_c",
+      "humidity_pct",
+      "pressure_hpa",
+      "dewpoint_c",
+      "temperature_c_diff_lag1",
+      "humidity_pct_diff_lag1",
+      "pressure_hpa_diff_lag1",
+      "temperature_c_roll24_zscore",
+      "humidity_pct_roll24_zscore",
+      "pressure_hpa_roll24_zscore"
+    ],
+    "threshold": 0.7746255993843079,
+    "num_nodes": 20,
+    "k_neighbors": 5,
+    "input_shape": [
+      "num_nodes",
+      10
+    ],
+    "adjacency_shape": [
+      20,
+      20
+    ],
+    "output_shape": [
+      "num_nodes",
+      10
+    ]
+  },
+  "lstm_model": {
+    "framework": "PyTorch",
+    "onnx_model": "lstm_temporal_autoencoder.onnx",
+    "native_checkpoint": "lstm_temporal_autoencoder.pt",
+    "preprocessing_file": "lstm_temporal_metadata.joblib",
+    "metadata_file": "lstm_model_metadata.json",
+    "onnx_opset_version": 17,
+    "onnx_input": "temporal_sequence",
+    "onnx_output": "reconstruction",
+    "features": [
+      "temperature_c",
+      "humidity_pct",
+      "pressure_hpa"
+    ],
+    "input_shape": [
+      "batch_size",
+      48,
+      3
+    ],
+    "output_shape": [
+      "batch_size",
+      48,
+      3
+    ],
+    "config": {
+      "sequence_length": 48,
+      "features": [
+        "temperature_c",
+        "humidity_pct",
+        "pressure_hpa"
+      ],
+      "latent_units": 16,
+      "lstm_units": 32,
+      "epochs": 30,
+      "batch_size": 256,
+      "learning_rate": 0.001,
+      "score_weight": 0.5,
+      "seed": 42
+    },
+    "calibration": {
+      "median": 0.011036434210836887,
+      "scale": 0.007456099465303122
+    }
+  },
+  "isolation_forest": {
+    "model_file": "isolation_forest_model.joblib",
+    "n_estimators": 500,
+    "max_samples": "auto",
+    "contamination": "auto",
+    "score_low": -0.029832089672608874,
+    "score_high": 0.10845009631428279,
+    "decision_threshold": null
+  },
+  "xgboost_model": {
+    "model_file": "xgboost_classifier.joblib",
+    "framework": "XGBoost",
+    "classes": [
+      "normal",
+      "temperature_spike",
+      "humidity_spike",
+      "pressure_jump",
+      "freeze",
+      "offset",
+      "multivariate_inconsistency",
+      "spatial_inconsistency"
+    ],
+    "num_classes": 8,
+    "feature_columns": [
+      "temperature_c",
+      "humidity_pct",
+      "pressure_hpa",
+      "hour_sin",
+      "hour_cos",
+      "month_sin",
+      "month_cos",
+      "cluster_temp_mean",
+      "cluster_temp_std",
+      "cluster_press_mean",
+      "cluster_press_std",
+      "cluster_hum_mean",
+      "cluster_hum_std",
+      "spatial_temp_zscore",
+      "spatial_press_zscore",
+      "spatial_hum_zscore",
+      "neighbor_dev_score",
+      "cluster_anomaly_pct",
+      "dewpoint_c",
+      "dewpoint_depression_c",
+      "temperature_c_diff_lag1",
+      "temperature_c_diff_lag24",
+      "temperature_c_rate_1h",
+      "temperature_c_roll6_mean",
+      "temperature_c_roll6_var",
+      "temperature_c_frozen_count",
+      "temperature_c_roll24_diff",
+      "temperature_c_roll24_zscore",
+      "humidity_pct_diff_lag1",
+      "humidity_pct_diff_lag24",
+      "humidity_pct_rate_1h",
+      "humidity_pct_roll6_mean",
+      "humidity_pct_roll6_var",
+      "humidity_pct_frozen_count",
+      "humidity_pct_roll24_diff",
+      "humidity_pct_roll24_zscore",
+      "pressure_hpa_diff_lag1",
+      "pressure_hpa_diff_lag24",
+      "pressure_hpa_rate_1h",
+      "pressure_hpa_roll6_mean",
+      "pressure_hpa_roll6_var",
+      "pressure_hpa_frozen_count",
+      "pressure_hpa_roll24_diff",
+      "pressure_hpa_roll24_zscore",
+      "cluster_Konkan_Deccan",
+      "cluster_NCR",
+      "cluster_Tamil_Nadu_Coast",
+      "cluster_West_Bengal",
+      "cluster___MISSING__"
+    ],
+    "training_period": {
+      "start": "2024-01-01",
+      "end": "2025-12-31"
+    },
+    "testing_period": {
+      "start": "2026-01-01",
+      "end": "latest_available"
+    },
+    "validation_data_used": false
+  },
+  "training_schema": {
+    "metadata_cols": [
+      "station_id",
+      "station_name",
+      "city",
+      "timestamp",
+      "root_cause",
+      "anomaly_label",
+      "hour",
+      "month",
+      "day",
+      "dayofweek",
+      "iforest_pred",
+      "anomaly_score",
+      "data_quality_alert",
+      "data_quality_status",
+      "data_quality_reason",
+      "temperature_c_was_missing",
+      "humidity_pct_was_missing",
+      "pressure_hpa_was_missing",
+      "latitude",
+      "longitude"
+    ],
+    "cluster_categories": [
+      "Central_UP",
+      "Konkan_Deccan",
+      "NCR",
+      "Tamil_Nadu_Coast",
+      "West_Bengal",
+      "__MISSING__"
+    ],
+    "encoded_columns": [
+      "temperature_c",
+      "humidity_pct",
+      "pressure_hpa",
+      "hour_sin",
+      "hour_cos",
+      "month_sin",
+      "month_cos",
+      "cluster_temp_mean",
+      "cluster_press_mean",
+      "cluster_hum_mean",
+      "cluster_temp_std",
+      "cluster_press_std",
+      "cluster_hum_std",
+      "spatial_temp_zscore",
+      "spatial_press_zscore",
+      "spatial_hum_zscore",
+      "neighbor_dev_score",
+      "cluster_anomaly_pct",
+      "dewpoint_c",
+      "dewpoint_depression_c",
+      "temperature_c_diff_lag1",
+      "temperature_c_diff_lag24",
+      "temperature_c_rate_1h",
+      "temperature_c_roll6_mean",
+      "temperature_c_roll6_var",
+      "temperature_c_frozen_count",
+      "temperature_c_roll24_diff",
+      "temperature_c_roll24_zscore",
+      "humidity_pct_diff_lag1",
+      "humidity_pct_diff_lag24",
+      "humidity_pct_rate_1h",
+      "humidity_pct_roll6_mean",
+      "humidity_pct_roll6_var",
+      "humidity_pct_frozen_count",
+      "humidity_pct_roll24_diff",
+      "humidity_pct_roll24_zscore",
+      "pressure_hpa_diff_lag1",
+      "pressure_hpa_diff_lag24",
+      "pressure_hpa_rate_1h",
+      "pressure_hpa_roll6_mean",
+      "pressure_hpa_roll6_var",
+      "pressure_hpa_frozen_count",
+      "pressure_hpa_roll24_diff",
+      "pressure_hpa_roll24_zscore",
+      "cluster_Konkan_Deccan",
+      "cluster_NCR",
+      "cluster_Tamil_Nadu_Coast",
+      "cluster_West_Bengal",
+      "cluster___MISSING__"
+    ]
+  },
+  "artifacts": [
+    "isolation_forest_model.joblib",
+    "xgboost_classifier.joblib",
+    "lstm_temporal_autoencoder.onnx",
+    "lstm_temporal_autoencoder.pt",
+    "lstm_temporal_metadata.joblib",
+    "lstm_model_metadata.json",
+    "gcn_spatial_model.onnx",
+    "gcn_spatial_model.pt",
+    "gcn_normalized_adjacency.npy",
+    "gcn_station_order.json",
+    "pipeline_metadata.json"
+  ]
+}

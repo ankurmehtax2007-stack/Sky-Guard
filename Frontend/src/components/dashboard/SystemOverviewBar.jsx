@@ -1,5 +1,4 @@
-import { useRealtimeReadings, useRealtimeAnomalies } from "../../hooks/useRealtimeData";
-import { useAnomalies } from "../../hooks/useAnomalies";
+import { useAnomalyStats } from "../../hooks/useAnomalyStats";
 import { Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 function StatItem({ label, value, variant, sub, unit, icon: Icon }) {
@@ -20,15 +19,12 @@ function StatItem({ label, value, variant, sub, unit, icon: Icon }) {
 }
 
 export function SystemOverviewBar() {
-  const { data: readings, loading: rLoading } = useRealtimeReadings();
-  const { data: baseAnomalies, loading: aLoading } = useAnomalies();
-  const anomalies = useRealtimeAnomalies(baseAnomalies);
-  const activeAnomalies = anomalies.filter((a) => a.status === "pending").length;
-  const criticalAnomalies = anomalies.filter(
-    (a) => a.status === "pending" && a.severity === "critical"
-  ).length;
+  const { stats, loading } = useAnomalyStats();
 
-  const loading = rLoading || aLoading;
+  const total = stats?.total ?? 0;
+  const active = stats?.active ?? 0;
+  const critical = stats?.critical ?? 0;
+  const resolved = stats?.resolved ?? 0;
 
   return (
     <div
@@ -38,21 +34,21 @@ export function SystemOverviewBar() {
       <StatItem
         label="Total Anomalies"
         icon={AlertTriangle}
-        value={loading ? "—" : anomalies.length}
+        value={loading ? "—" : total.toLocaleString()}
         variant="muted"
         sub="All recorded incidents"
       />
       <StatItem
         label="Active Anomalies"
         icon={AlertTriangle}
-        value={loading ? "—" : activeAnomalies}
-        variant={activeAnomalies > 0 ? (criticalAnomalies > 0 ? "red" : "amber") : "green"}
-        sub={criticalAnomalies > 0 ? `${criticalAnomalies} Critical alert` : "All stations stable"}
+        value={loading ? "—" : active.toLocaleString()}
+        variant={active > 0 ? (critical > 0 ? "red" : "amber") : "green"}
+        sub={critical > 0 ? `${critical} Critical alert${critical > 1 ? "s" : ""}` : (active > 0 ? `${active} Active incidents` : "All stations stable")}
       />
       <StatItem
         label="Resolved Anomalies"
         icon={CheckCircle2}
-        value={loading ? "—" : anomalies.filter((a) => String(a.status || "").toLowerCase() === "resolved").length}
+        value={loading ? "—" : resolved.toLocaleString()}
         variant="green"
         sub="Incidents already resolved"
       />

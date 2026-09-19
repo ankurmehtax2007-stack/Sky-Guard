@@ -12,9 +12,9 @@ import logger from "../../utils/logger.js";
 
 export const createTask = async (req, res) => {
     try {
-        const { title, description, stationId, priority, assignedTo } = req.body;
+        const { title, description, stationId, priority, assignedTo, anomalyId } = req.body;
         const task = await createTaskService(
-            { title, description, stationId, priority, assignedTo },
+            { title, description, stationId, priority, assignedTo, anomalyId },
             req.user
         );
         return res.status(201).json({

@@ -46,6 +46,7 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
   const [assignEngineerId, setAssignEngineerId] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState(null);
+  const [assignedSuccess, setAssignedSuccess] = useState(null);
 
   useEffect(() => {
     if (!data) return;
@@ -182,6 +183,8 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
       const taskId = task?._id || task?.id;
       if (!taskId) throw new Error("Task was created but no task ID was returned by the backend.");
       await assignTask(taskId, assignEngineerId);
+      const matched = assignEngineers.find((e) => (e._id || e.id) === assignEngineerId);
+      setAssignedSuccess(matched?.username || "Engineer");
       setAssignOpen(false);
     } catch (err) {
       const serverMessage = err?.response?.data?.message || err?.response?.data?.error;
@@ -223,20 +226,22 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
   const currentTemp = isTempSurged
     ? (typeof data.value === "number" ? data.value.toFixed(1) : data.value)
     : (data.readingId?.temperature !== undefined && typeof data.readingId.temperature === "number"
-        ? data.readingId.temperature.toFixed(1)
-        : (typeof data.temperature === "number" ? data.temperature.toFixed(1) : (data.stationId === "AWS_01" ? "28.4" : data.stationId === "AWS_02" ? "31.2" : "24.6")));
+      ? data.readingId.temperature.toFixed(1)
+      : (typeof data.temperature === "number" ? data.temperature.toFixed(1) : (data.stationId === "AWS_01" ? "28.4" : data.stationId === "AWS_02" ? "31.2" : "24.6")));
 
   const currentHum = isHumSurged
     ? (typeof data.value === "number" ? Math.round(data.value) : data.value)
     : (data.readingId?.humidity !== undefined && typeof data.readingId.humidity === "number"
-        ? Math.round(data.readingId.humidity)
-        : (typeof data.humidity === "number" ? Math.round(data.humidity) : (data.stationId === "AWS_01" ? "58" : data.stationId === "AWS_02" ? "72" : "64")));
+      ? Math.round(data.readingId.humidity)
+      : (typeof data.humidity === "number" ? Math.round(data.humidity) : (data.stationId === "AWS_01" ? "58" : data.stationId === "AWS_02" ? "72" : "64")));
 
   const currentPress = isPressSurged
     ? (typeof data.value === "number" ? Math.round(data.value) : data.value)
     : (data.readingId?.pressure !== undefined && typeof data.readingId.pressure === "number"
-        ? Math.round(data.readingId.pressure)
-        : (typeof data.pressure === "number" ? Math.round(data.pressure) : (data.stationId === "AWS_01" ? "1012" : data.stationId === "AWS_02" ? "1009" : "1010")));
+      ? Math.round(data.readingId.pressure)
+      : (typeof data.pressure === "number" ? Math.round(data.pressure) : (data.stationId === "AWS_01" ? "1012" : data.stationId === "AWS_02" ? "1009" : "1010")));
+
+  const currentAssignedName = assignedSuccess || data?.assignedToName || (typeof data?.assignedTo === "object" ? data?.assignedTo?.username : null);
 
   return (
     <div className="anomaly-detail">
@@ -690,34 +695,48 @@ export function AnomalyDetails({ anomalyId, onUpdated }) {
       {/* Operator anomaly assignment */}
       {role === "operator" && (
         <div className="detail-section anomaly-assignment-section">
-          <div className="anomaly-assignment-header">
-            <div>
-              <h3 className="detail-section-title" style={{ marginBottom: 3 }}>
-                <Wrench size={13} style={{ display: "inline", marginRight: 5 }} />
-                Engineer Assignment
-              </h3>
-              <span className="muted-text">Send this detected anomaly to an engineer in the same city/station.</span>
+          {currentAssignedName ? (
+            <div className="assignment-confirmed">
+              <div className="assignment-confirmed-icon">
+                <CheckCircle2 size={18} />
+              </div>
+              <div className="assignment-confirmed-text">
+                <strong>Done Assignment to Engineer</strong>
+                <span>Assigned to {currentAssignedName} — Task created successfully. Engineer has been notified in their panel.</span>
+              </div>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={loadAssignableEngineers}>
-              Assign to Engineer
-            </button>
-          </div>
-          {assignError && <InlineError message={assignError} />}
-          {assignOpen && (
-            <div className="anomaly-assignment-form">
-              <select className="filter-select" value={assignEngineerId} onChange={(e) => setAssignEngineerId(e.target.value)}>
-                <option value="">Select engineer</option>
-                {assignEngineers.map((engineer) => (
-                  <option key={engineer._id || engineer.id} value={engineer._id || engineer.id}>
-                    {engineer.username || "Engineer"} — {engineer.city || engineer.stationId || data.stationId}
-                  </option>
-                ))}
-              </select>
-              <button className="btn btn-secondary btn-sm" onClick={() => setAssignOpen(false)}>Cancel</button>
-              <button className="btn btn-primary btn-sm" disabled={!assignEngineerId || assigning} onClick={assignAnomaly}>
-                {assigning ? "Assigning…" : "Confirm Assignment"}
-              </button>
-            </div>
+          ) : (
+            <>
+              <div className="anomaly-assignment-header">
+                <div>
+                  <h3 className="detail-section-title" style={{ marginBottom: 3 }}>
+                    <Wrench size={13} style={{ display: "inline", marginRight: 5 }} />
+                    Engineer Assignment
+                  </h3>
+                  <span className="muted-text">Send this detected anomaly to an engineer in the same city/station.</span>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={loadAssignableEngineers}>
+                  Assign to Engineer
+                </button>
+              </div>
+              {assignError && <InlineError message={assignError} />}
+              {assignOpen && (
+                <div className="anomaly-assignment-form">
+                  <select className="filter-select" value={assignEngineerId} onChange={(e) => setAssignEngineerId(e.target.value)}>
+                    <option value="">Select engineer</option>
+                    {assignEngineers.map((engineer) => (
+                      <option key={engineer._id || engineer.id} value={engineer._id || engineer.id}>
+                        {engineer.username || "Engineer"} — {engineer.city || engineer.stationId || data.stationId}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setAssignOpen(false)}>Cancel</button>
+                  <button className="btn btn-primary btn-sm" disabled={!assignEngineerId || assigning} onClick={assignAnomaly}>
+                    {assigning ? "Assigning…" : "Confirm Assignment"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

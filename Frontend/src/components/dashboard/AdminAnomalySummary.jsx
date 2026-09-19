@@ -1,6 +1,5 @@
-import { useAnomalies } from "../../hooks/useAnomalies";
-import { useRealtimeAnomalies } from "../../hooks/useRealtimeData";
-import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
+import { useAnomalyStats } from "../../hooks/useAnomalyStats";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 function CountCard({ icon: Icon, label, value, tone, description }) {
   return (
@@ -16,13 +15,11 @@ function CountCard({ icon: Icon, label, value, tone, description }) {
 }
 
 export function AdminAnomalySummary() {
-  const { data: baseAnomalies, loading, error } = useAnomalies();
-  const anomalies = useRealtimeAnomalies(baseAnomalies);
+  const { stats, loading, error } = useAnomalyStats();
 
-  const normalized = anomalies.map((a) => String(a.status || "pending").toLowerCase());
-  const total = normalized.length;
-  const resolved = normalized.filter((s) => s === "resolved").length;
-  const active = normalized.filter((s) => ["pending", "active", "ongoing"].includes(s)).length;
+  const total = stats?.total ?? 0;
+  const active = stats?.active ?? 0;
+  const resolved = stats?.resolved ?? 0;
 
   return (
     <section className="admin-anomaly-summary">
@@ -41,21 +38,21 @@ export function AdminAnomalySummary() {
           <CountCard
             icon={AlertTriangle}
             label="Total Anomalies"
-            value={loading ? "—" : total}
+            value={loading ? "—" : total.toLocaleString()}
             description="All recorded incidents"
             tone="blue"
           />
           <CountCard
             icon={AlertTriangle}
             label="Active Anomalies"
-            value={loading ? "—" : active}
+            value={loading ? "—" : active.toLocaleString()}
             description="Incidents requiring attention"
             tone="red"
           />
           <CountCard
             icon={CheckCircle2}
             label="Resolved Anomalies"
-            value={loading ? "—" : resolved}
+            value={loading ? "—" : resolved.toLocaleString()}
             description="Incidents already resolved"
             tone="green"
           />

@@ -13,8 +13,10 @@ import { useCityScope } from "../context/CityScope";
 import { getMyTasks, getTasks } from "../api/tasks";
 import { getAllUsers } from "../api/auth";
 import { useAnomalies } from "../hooks/useAnomalies";
+import { useAnomalyStats } from "../hooks/useAnomalyStats";
 import { useRealtimeAnomalies } from "../hooks/useRealtimeData";
 import { useEffect, useMemo, useState } from "react";
+import { WorkDetailModal } from "../components/dashboard/WorkDetailModal";
 
 function ScopeBanner({ role, city }) {
   const config = {
@@ -35,15 +37,6 @@ function ScopeBanner({ role, city }) {
   );
 }
 
-
-function MetricCard({ icon: Icon, label, value, sub, variant = "default" }) {
-  return (
-    <div className={`role-metric-card role-metric-card--${variant}`}>
-      <div className="role-metric-icon"><Icon size={16} /></div>
-      <div className="role-metric-copy"><span>{label}</span><strong>{value}</strong>{sub && <small>{sub}</small>}</div>
-    </div>
-  );
-}
 
 function useWorkData(role, user) {
   const [tasks, setTasks] = useState([]);
@@ -69,7 +62,7 @@ function useWorkData(role, user) {
     return () => { active = false; };
   }, [role, user?.id, user?.city, user?.stationId]);
 
-  return { tasks, engineers, loading };
+  return { tasks, engineers, loading, setTasks };
 }
 
 function AdminWorkCards() {
@@ -114,34 +107,59 @@ function AdminWorkCards() {
   );
 }
 
+function MetricCard({ icon: Icon, label, value, sub, variant = "default", onClick }) {
+  return (
+    <div className={`role-metric-card role-metric-card--${variant}${onClick ? " role-metric-card--clickable" : ""}`} onClick={onClick}>
+      <div className="role-metric-icon"><Icon size={16} /></div>
+      <div className="role-metric-copy"><span>{label}</span><strong>{value}</strong>{sub && <small>{sub}</small>}</div>
+    </div>
+  );
+}
+
 function EngineerWorkCards() {
-  const { tasks, loading } = useWorkData("engineer", null);
+  const { tasks, loading, setTasks } = useWorkData("engineer", null);
+  const [modalFilter, setModalFilter] = useState(null);
   const given = tasks.length;
   const done = tasks.filter((t) => String(t.status).toUpperCase() === "COMPLETED").length;
   const pending = tasks.filter((t) => !["COMPLETED"].includes(String(t.status).toUpperCase())).length;
+
+  const handleTaskUpdated = (updatedTask) => {
+    const updatedId = String(updatedTask._id || updatedTask.id);
+    setTasks((prev) =>
+      prev.map((t) => (String(t._id || t.id) === updatedId ? { ...t, ...updatedTask, status: updatedTask.status } : t))
+    );
+  };
+
   return (
     <section className="role-work-cards">
       <div className="role-work-card-grid role-work-card-grid--engineer">
-        <MetricCard icon={ClipboardCheck} label="Work Given" value={loading ? "—" : given} sub="Assigned assignments" />
-        <MetricCard icon={CheckCircle2} label="Work Done" value={loading ? "—" : done} sub="Resolved assignments" variant="resolved" />
-        <MetricCard icon={Clock3} label="Work Pending" value={loading ? "—" : pending} sub="Pending assignments" variant="pending" />
+        <MetricCard icon={ClipboardCheck} label="Work Given" value={loading ? "—" : given} sub="Assigned assignments" onClick={() => setModalFilter("all")} />
+        <MetricCard icon={CheckCircle2} label="Work Done" value={loading ? "—" : done} sub="Resolved assignments" variant="resolved" onClick={() => setModalFilter("done")} />
+        <MetricCard icon={Clock3} label="Work Pending" value={loading ? "—" : pending} sub="Pending assignments" variant="pending" onClick={() => setModalFilter("pending")} />
       </div>
+      <WorkDetailModal
+        isOpen={!!modalFilter}
+        onClose={() => setModalFilter(null)}
+        tasks={tasks}
+        filter={modalFilter || "all"}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </section>
   );
 }
 
+
 function OperatorAnomalyCards() {
-  const { data: baseAnomalies } = useAnomalies();
-  const anomalies = useRealtimeAnomalies(baseAnomalies);
-  const detected = anomalies.length;
-  const resolved = anomalies.filter((a) => String(a.status).toLowerCase() === "resolved").length;
-  const pending = anomalies.filter((a) => String(a.status).toLowerCase() !== "resolved").length;
+  const { stats, loading } = useAnomalyStats();
+  const detected = stats?.total ?? 0;
+  const resolved = stats?.resolved ?? 0;
+  const pending = stats?.active ?? 0;
   return (
     <section className="role-work-cards">
       <div className="role-work-card-grid role-work-card-grid--operator">
-        <MetricCard icon={AlertTriangle} label="Anomalies Detected" value={detected} sub="Detected incidents" />
-        <MetricCard icon={CheckCircle2} label="Anomalies Resolved" value={resolved} sub="Closed incidents" variant="resolved" />
-        <MetricCard icon={Clock3} label="Anomalies Pending" value={pending} sub="Awaiting resolution" variant="pending" />
+        <MetricCard icon={AlertTriangle} label="Anomalies Detected" value={loading ? "—" : detected.toLocaleString()} sub="Detected incidents" />
+        <MetricCard icon={CheckCircle2} label="Anomalies Resolved" value={loading ? "—" : resolved.toLocaleString()} sub="Closed incidents" variant="resolved" />
+        <MetricCard icon={Clock3} label="Anomalies Pending" value={loading ? "—" : pending.toLocaleString()} sub="Awaiting resolution" variant="pending" />
       </div>
     </section>
   );

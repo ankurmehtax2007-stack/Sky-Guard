@@ -1,5 +1,5 @@
 import { broadcast } from "../../websocket/websocket.manager.js";
-import { countAnomalies, createAnomaly, findAnomalies, findAnomalyById, updateAnomalyStatusRepo, findAnomalyByReadingId, findRecentIncident } from "./anomaly.repository.js";
+import { countAnomalies, createAnomaly, findAnomalies, findAnomalyById, updateAnomalyStatusRepo, findAnomalyByReadingId, findRecentIncident, getAnomalyStatsRepo } from "./anomaly.repository.js";
 import logger from "../../utils/logger.js";
 import AppError from "../../utils/appError.js";
 
@@ -123,9 +123,10 @@ export const fetchAnomalies = async (stationId, pageNumber = 1, limitNumber = 50
         ...filters
     };
 
-    const [anomalies, total] = await Promise.all([
+    const [anomalies, total, stats] = await Promise.all([
         findAnomalies(stationId, options),
-        countAnomalies(stationId, options)
+        countAnomalies(stationId, options),
+        getAnomalyStatsRepo(stationId)
     ]);
 
     return {
@@ -135,8 +136,13 @@ export const fetchAnomalies = async (stationId, pageNumber = 1, limitNumber = 50
             page,
             limit,
             totalPages: Math.ceil(total / limit)
-        }
+        },
+        stats
     };
+};
+
+export const fetchAnomalyStats = async (stationId) => {
+    return await getAnomalyStatsRepo(stationId);
 };
 
 export const fetchAnomalyById = async (anomalyId) => {

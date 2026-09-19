@@ -30,8 +30,10 @@ def fuse_evidence(iforest_novelty, temporal_evidence, spatial_evidence, physics_
         w_spat * spat
     )
 
+    # When all active indicators show low probability, keep score nominal
     nominal_mask = (xgb < 0.20) & (phys < 0.20) & (temp < 0.25) & (spat < 0.25)
 
+    # Boost when ML model, physical constraint, temporal pattern, or spatial outlier triggers
     max_evidence = np.maximum.reduce([xgb, phys, temp, spat])
     anom_boost = np.maximum(weighted, 0.75 * max_evidence)
     fused = np.where(nominal_mask, weighted * 0.65, anom_boost)

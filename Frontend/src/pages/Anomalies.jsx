@@ -12,7 +12,7 @@ import { exportAnomaliesToCSV } from "../utils/formatters";
 import { Download, RefreshCw, AlertTriangle, ShieldAlert, CheckCircle, Clock } from "lucide-react";
 
 export default function Anomalies() {
-  const { data: baseAnomalies, pagination, loading, error, refetch } = useAnomalies();
+  const { data: baseAnomalies, pagination, stats, loading, error, refetch } = useAnomalies();
   const anomalies = useRealtimeAnomalies(baseAnomalies);
   const wsStatus = useWsStatus();
 
@@ -36,10 +36,10 @@ export default function Anomalies() {
   );
 
   // Triage incident counts
-  const totalFaultCount = pagination?.total ? Math.max(pagination.total, anomalies.length) : anomalies.length;
-  const pendingCount = anomalies.filter((a) => a.status === "pending").length;
-  const criticalCount = anomalies.filter((a) => a.status === "pending" && a.severity === "critical").length;
-  const resolvedCount = anomalies.filter((a) => a.status === "resolved").length;
+  const totalFaultCount = stats?.total ?? (pagination?.total ? Math.max(pagination.total, anomalies.length) : anomalies.length);
+  const pendingCount = stats?.active ?? anomalies.filter((a) => a.status === "pending").length;
+  const criticalCount = stats?.critical ?? anomalies.filter((a) => a.status === "pending" && a.severity === "critical").length;
+  const resolvedCount = stats?.resolved ?? anomalies.filter((a) => a.status === "resolved").length;
 
   const handleExportCSV = () => {
     exportAnomaliesToCSV(filtered, `nimbus_anomalies_${Date.now()}.csv`);

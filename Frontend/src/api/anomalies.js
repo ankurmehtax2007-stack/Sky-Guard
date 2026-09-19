@@ -5,6 +5,11 @@ export const getAnomalies = async (params = {}) => {
   return response.data;
 };
 
+export const getAnomalyStats = async (params = {}) => {
+  const response = await api.get("/api/anomalies/stats", { params });
+  return response.data;
+};
+
 export const getStationAnomalies = async (stationId, params = {}) => {
   const response = await api.get(`/api/anomalies/station/${stationId}`, { params });
   return response.data;

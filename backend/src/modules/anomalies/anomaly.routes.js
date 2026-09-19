@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAnomalies, getAnomalyById, getStationAnomalies, updateAnomalyStatusController } from "./anomaly.controller.js";
+import { getAnomalies, getAnomalyById, getStationAnomalies, updateAnomalyStatusController, getAnomalyStatsController } from "./anomaly.controller.js";
 import { authenticateUser, authorize } from "../../auth/auth.middleware.js";
 import { authorizeStationAccess } from "../../middlewares/stationAuth.middleware.js";
 import { PERMISSIONS } from "../../auth/rbac/permissions.js";
@@ -7,6 +7,7 @@ import { PERMISSIONS } from "../../auth/rbac/permissions.js";
 const anomalyRouter = Router();
 
 anomalyRouter.get("/", authenticateUser, authorize(PERMISSIONS.ANOMALIES_READ), getAnomalies);
+anomalyRouter.get("/stats", authenticateUser, authorize(PERMISSIONS.ANOMALIES_READ), getAnomalyStatsController);
 anomalyRouter.get(
     "/station/:stationId",
     authenticateUser,

@@ -47,6 +47,11 @@ const taskSchema = new mongoose.Schema(
             ref: "User",
             default: null,
         },
+        anomalyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Anomaly",
+            default: null,
+        },
         status: {
             type: String,
             enum: ["PENDING", "ONGOING", "BLOCKED", "COMPLETED"],

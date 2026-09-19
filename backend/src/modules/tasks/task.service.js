@@ -11,15 +11,18 @@ import {
 import { findUserById } from "../../auth/user.repository.js";
 import { logAction } from "../audit/audit.service.js";
 import { createUserNotification } from "../notifications/notification.service.js";
+import { broadcast } from "../../websocket/websocket.manager.js";
+import { updateAnomalyStatus } from "../anomalies/anomaly.service.js";
+import Anomaly from "../anomalies/anomaly.model.js";
 
 const VALID_TRANSITIONS = {
-    PENDING: ["ONGOING"],
-    ONGOING: ["BLOCKED", "COMPLETED"],
-    BLOCKED: ["ONGOING"],
-    COMPLETED: [],
+    PENDING: ["ONGOING", "COMPLETED"],
+    ONGOING: ["BLOCKED", "COMPLETED", "PENDING"],
+    BLOCKED: ["ONGOING", "COMPLETED"],
+    COMPLETED: ["ONGOING", "PENDING"],
 };
 
-export const createTaskService = async ({ title, description, stationId, priority, assignedTo }, actor) => {
+export const createTaskService = async ({ title, description, stationId, priority, assignedTo, anomalyId }, actor) => {
     if (!title || !stationId) {
         const err = new Error("title and stationId are required");
         err.status = 400;
@@ -46,6 +49,7 @@ export const createTaskService = async ({ title, description, stationId, priorit
         assignedTo: assignedTo || null,
         priority: priority || "MEDIUM",
         status: "PENDING",
+        anomalyId: anomalyId || null,
     });
 
     await logAction({
@@ -61,6 +65,19 @@ export const createTaskService = async ({ title, description, stationId, priorit
             type: "TASK_ASSIGNED",
             message: `You have been assigned a new task: ${title}`,
             stationId,
+        });
+
+        broadcast({
+            type: "TASK_ASSIGNED",
+            recipientId: assignedTo.toString(),
+            task: {
+                _id: task._id,
+                title,
+                stationId,
+                priority: task.priority || "MEDIUM",
+                description: task.description || "",
+                createdAt: task.createdAt || new Date(),
+            },
         });
     }
 
@@ -99,6 +116,39 @@ export const assignTaskService = async (taskId, engineerId, actor) => {
         stationId: task.stationId,
     });
 
+    broadcast({
+        type: "TASK_ASSIGNED",
+        recipientId: engineerId.toString(),
+        task: {
+            _id: updated._id || taskId,
+            title: updated.title || task.title,
+            stationId: task.stationId,
+            priority: updated.priority || task.priority || "MEDIUM",
+            description: updated.description || task.description || "",
+            createdAt: updated.createdAt || task.createdAt || new Date(),
+        },
+    });
+
+    const engineer = await findUserById(engineerId);
+
+    // Record assignment on linked anomaly if present
+    let anomalyIdToLink = task.anomalyId;
+    if (!anomalyIdToLink && task.description) {
+        const match = task.description.match(/Anomaly ID:\s*([a-f0-9]{24})/i);
+        if (match) anomalyIdToLink = match[1];
+    }
+    if (anomalyIdToLink) {
+        try {
+            await Anomaly.findByIdAndUpdate(anomalyIdToLink, {
+                assignedTo: engineerId,
+                assignedToName: engineer?.username || "Engineer",
+                assignedTaskId: taskId,
+            });
+        } catch (e) {
+            // Non-fatal fallback
+        }
+    }
+
     return updated;
 };
 
@@ -132,6 +182,24 @@ export const updateTaskStatusService = async (taskId, newStatus, actor) => {
     }
 
     const updated = await updateTaskStatus(taskId, normalizedStatus);
+
+    // Synchronize associated anomaly status if this task was created from an anomaly
+    let anomalyIdToUpdate = task.anomalyId;
+    if (!anomalyIdToUpdate && task.description) {
+        const match = task.description.match(/Anomaly ID:\s*([a-f0-9]{24})/i);
+        if (match) anomalyIdToUpdate = match[1];
+    }
+    if (anomalyIdToUpdate) {
+        try {
+            if (normalizedStatus === "COMPLETED") {
+                await updateAnomalyStatus(anomalyIdToUpdate, "resolved", actor.username || "Engineer");
+            } else if (normalizedStatus === "PENDING") {
+                await updateAnomalyStatus(anomalyIdToUpdate, "pending");
+            }
+        } catch (anomalyErr) {
+            // Non-fatal if anomaly was already resolved or doesn't exist
+        }
+    }
 
     await logAction({
         action: "TASK_UPDATED",

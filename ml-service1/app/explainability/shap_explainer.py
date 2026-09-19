@@ -42,12 +42,14 @@ def explain(model, X, feature_names, target_class_id=0, target_class_name='norma
 
     factors = []
 
+    # 1. Genuine SHAP TreeExplainer for Tree-based models (XGBoost / Random Forest)
     try:
         import shap
         if hasattr(model, 'get_booster') or hasattr(model, 'estimators_'):
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(X)
             
+            # Handle multi-class shapes: list of arrays or 3D tensor
             if isinstance(shap_values, list):
                 target_idx = min(int(target_class_id), len(shap_values) - 1)
                 vals = np.asarray(shap_values[target_idx])
@@ -78,6 +80,7 @@ def explain(model, X, feature_names, target_class_id=0, target_class_name='norma
     except Exception:
         pass
 
+    # 2. Dynamic Instance-Level Perturbation Feature Attribution Fallback
     if not factors:
         row = X_mat[0]
         deviations = np.zeros(len(names), dtype=float)
@@ -130,3 +133,111 @@ def explain(model, X, feature_names, target_class_id=0, target_class_name='norma
             })
 
     return factors
+
+def _resolve_key() -> str:
+    import os
+    for env_name in ["MISTRAL_API_KEY", "MISTRAL_KEY", "AI_KEY"]:
+        k = os.getenv(env_name)
+        if k and len(k) > 5:
+            return k.strip()
+    return ""
+
+def _build_deterministic_report(diagnostic: dict, instruction: str = "") -> dict:
+    decision = diagnostic.get("decision") or diagnostic.get("prediction", {}).get("decision", "normal")
+    root = diagnostic.get("root_cause") or diagnostic.get("prediction", {}).get("root_cause", "normal")
+    sev = diagnostic.get("severity") or diagnostic.get("severity", {}).get("level", "NONE")
+    conf = diagnostic.get("confidence") or diagnostic.get("prediction", {}).get("confidence", 0.95)
+    health = diagnostic.get("health_score") or diagnostic.get("health", {}).get("score", 100.0)
+    station_id = diagnostic.get("station_id", "AWS_001")
+    
+    t = diagnostic.get("temperature_c", 25.0)
+    rh = diagnostic.get("humidity_pct", 50.0)
+    p = diagnostic.get("pressure_hpa", 1013.25)
+
+    recs = []
+    if decision == "normal":
+        headline = f"Station {station_id} is operating within nominal meteorological baselines."
+        body = (
+            f"Telemetric validation confirmed sensor parameters (T: {t}°C, RH: {rh}%, P: {p} hPa). "
+            f"Health index remains optimal at {health}%. No anomalous physical deviations or spatial inconsistencies observed."
+        )
+        recs.append("Continue routine automated polling and bi-weekly diagnostic sweeps.")
+    else:
+        headline = f"Alert: Diagnosed {str(root).replace('_', ' ').upper()} anomaly at station {station_id} with {sev} severity."
+        body = (
+            f"Multi-source evidence fusion registered an anomaly event (confidence: {float(conf)*100:.1f}%, health: {health}%). "
+            f"Observed parameters: Temperature={t}°C, Relative Humidity={rh}%, Pressure={p} hPa. "
+            f"Condition signature strongly corresponds to {str(root).replace('_', ' ')}."
+        )
+        if "temp" in str(root):
+            recs.append("Inspect solar radiation shield, verify RTD 4-wire bridge, and check ADC reference voltage.")
+        elif "hum" in str(root):
+            recs.append("Check capacitive hygrometer element for moisture saturation, condensation, or dust deposition.")
+        elif "press" in str(root):
+            recs.append("Audit static pressure port and vent path for physical blockage or transient pressure jumps.")
+        elif "freeze" in str(root):
+            recs.append("Power-cycle datalogger channel and verify analog-to-digital converter I2C/SPI bus activity.")
+        else:
+            recs.append("Perform full on-site sensor recalibration and verify station spatial siting against cluster neighbors.")
+
+    maint = diagnostic.get("maintenance", {})
+    if isinstance(maint, dict) and maint.get("actions"):
+        for a in maint["actions"]:
+            if a not in recs:
+                recs.append(a)
+
+    report_text = f"### Incident Diagnostic Summary\n\n**{headline}**\n\n{body}\n\n#### Recommended Field Actions:\n" + "\n".join(f"- {r}" for r in recs)
+
+    return {
+        "llm_report": report_text,
+        "llm_source": "deterministic_rules",
+        "ai_recommendations": recs
+    }
+
+def generate_ai_report(
+    diagnostic: dict,
+    instruction: str = "Explain the incident and recommend maintenance actions.",
+    generate_report: bool = True,
+    only_on_anomaly: bool = False
+) -> dict:
+    decision = diagnostic.get("decision") or diagnostic.get("prediction", {}).get("decision", "normal")
+    if only_on_anomaly and decision == "normal":
+        return {"llm_report": "", "llm_source": "skipped_nominal", "ai_recommendations": []}
+
+    api_key = _resolve_key()
+    if not api_key:
+        return _build_deterministic_report(diagnostic, instruction)
+
+    try:
+        import requests
+        url = "https://api.mistral.ai/v1/chat/completions"
+        prompt = (
+            f"You are SkyGuard AI, an expert meteorological telemetry diagnostics engineer. "
+            f"Analyze the following diagnostic result: {diagnostic}. "
+            f"Instruction: {instruction}. Keep response professional, actionable, and structured with markdown headings."
+        )
+        payload = {
+            "model": "mistral-small-latest",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+            "max_tokens": 400
+        }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        resp = requests.post(url, json=payload, headers=headers, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            deterministic = _build_deterministic_report(diagnostic, instruction)
+            return {
+                "llm_report": content,
+                "llm_source": "mistral-ai",
+                "ai_recommendations": deterministic["ai_recommendations"]
+            }
+    except Exception:
+        pass
+
+    return _build_deterministic_report(diagnostic, instruction)
+

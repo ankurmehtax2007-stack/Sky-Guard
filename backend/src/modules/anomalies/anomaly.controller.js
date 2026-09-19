@@ -1,5 +1,5 @@
 import { anomalyPaginationSchema, anomalyStatusSchema } from "./anomaly.validator.js";
-import { fetchAnomalies, fetchAnomalyById, updateAnomalyStatus } from "./anomaly.service.js";
+import { fetchAnomalies, fetchAnomalyById, updateAnomalyStatus, fetchAnomalyStats } from "./anomaly.service.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 
 export const getAnomalies = asyncHandler(async (req, res) => {
@@ -52,6 +52,51 @@ export const getAnomalies = asyncHandler(async (req, res) => {
         success: true,
         message: "Anomalies fetched successfully",
         data: anomalies
+    });
+});
+
+export const getAnomalyStatsController = asyncHandler(async (req, res) => {
+    const userRole = (req.user?.role || "").toLowerCase();
+    const userStatus = (req.user?.status || "PENDING").toUpperCase();
+    const { stationId } = req.query;
+
+    let targetStationId = null;
+
+    if (userRole === "admin") {
+        targetStationId = stationId ? String(stationId).trim() : null;
+    } else {
+        if (userStatus === "PENDING") {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: Account is pending station assignment by an administrator",
+            });
+        }
+        if (userStatus === "SUSPENDED") {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: Account is suspended",
+            });
+        }
+        if (!req.user?.stationId) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: No station assigned to this account",
+            });
+        }
+        if (stationId && String(stationId).trim() !== req.user.stationId) {
+            return res.status(403).json({
+                success: false,
+                message: `Forbidden: You are not authorized to access anomalies for station ${stationId}`,
+            });
+        }
+        targetStationId = req.user.stationId;
+    }
+
+    const stats = await fetchAnomalyStats(targetStationId);
+    return res.status(200).json({
+        success: true,
+        message: "Anomaly stats fetched successfully",
+        data: stats
     });
 });
 
